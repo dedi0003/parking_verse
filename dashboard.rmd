@@ -1,0 +1,121 @@
+---
+title: "Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(broom)
+library(shiny)
+library(lubridate)
+library(sugrrants)
+library(leaflet)
+library(ggmap)
+library(here)
+library(mapview)
+```
+
+```{r loading-data}
+park19 <- read_csv("park19_tidy.csv")
+top10_table <- read_csv("Top10_Melb_Count.csv")
+```
+
+
+Overview
+===========================
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### User interactions?
+
+```{r}
+
+```
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Top 10 Busiest Parking Street in Melbourne
+
+```{r}
+knitr::kable(top10_table) %>%
+kableExtra::kable_styling(bootstrap_options = "basic")
+```
+
+### Map of 10 Busiest Parking Street in Melbourne
+
+```{r}
+coord <- data_frame("lat" = c(-37.8147255,
+                              -37.8192437,
+                              -37.8101661,
+                              -37.8183015,
+                              -37.8156404,
+                              -37.809040,
+                              -37.8140175,
+                              -37.8153781,
+                              -37.8075632,
+                              -37.816335),
+                    "lon"=c(144.952553,
+                            144.9553465,
+                            144.9687394,
+                            144.9811929,
+                            144.976875,
+                            144.969121,
+                            144.9692056,
+                            144.9531639,
+                            144.9532773,
+                            144.978169))
+
+
+top10cor <- bind_cols(top10_table,coord)
+
+# Map for locations
+cb_bbox <- make_bbox(lon = top10cor$lon,
+                     lat = top10cor$lat,
+                     f = 0.9)  
+
+best_locations = leaflet() %>%
+  # Base group
+  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
+  # Add reciever location data
+  addCircles(
+    lng = top10cor$lon,
+    lat = top10cor$lat, 
+    fill=TRUE, color="red",
+    weight= 5,
+    radius = 2,
+    stroke = FALSE, fillOpacity = 1)
+
+getColor <- function(table) {
+  sapply(table$CountperDay, function(CountperDay) {
+  if(CountperDay <= 350) {
+    "green"
+  } else if(CountperDay <= 450) {
+    "orange"
+  } else {
+    "red"
+  } })
+}
+
+icons <- awesomeIcons(
+  icon = 'ios-close',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(top10cor)
+) 
+
+leaflet(data = top10cor[1:10,]) %>%
+  addTiles() %>%
+addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(StreetName), label=~as.character(StreetName))
+```
+
+Predict
+===========================
+
+Explain
+===========================
