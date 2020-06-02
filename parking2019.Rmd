@@ -73,30 +73,24 @@ coord <- data_frame("lat" = c(-37.8147255,
                             144.9532773,
                             144.978169))
 
+info <- data_frame("info" = c("Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.",
+"King Street is a key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues",
+"Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.",
+"Jolimont Street features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground",
+"Jolimont Street features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground",
+"In Exhibition Street there a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. It also the heart of working district",
+"In Exhibition Street there a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. It also the heart of working district",
+"King Street is a key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues",
+"William Street is a major street in the city, there are notable landmarks on William Street include the Queen Victoria Market, the Flagstaff Gardens, Immigration Museum, Supreme Court of Victoria, AMP Square",
+"Wellington Parade South, it's located between parks and residential building"))
 
-top10cor <- bind_cols(top10_table,coord)
-```
-
-```{r leaflet_map}
-# Map for locations
-cb_bbox <- make_bbox(lon = top10cor$lon,
-                     lat = top10cor$lat,
-                     f = 0.9)  
-
-best_locations = leaflet() %>%
-  # Base group
-  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
-  # Add reciever location data
-  addCircles(
-    lng = top10cor$lon,
-    lat = top10cor$lat, 
-    fill=TRUE, color="red",
-    weight= 5,
-    radius = 2,
-    stroke = FALSE, fillOpacity = 1)
+top10_cor_info <- bind_cols(top10_table, coord, info)
+write_csv(top10_cor_info, "Top10_Melb_Cor_Info.csv")
 ```
 
 ```{r leaflet_markers}
+top10_leaflet <- read_csv("Top10_Melb_Cor_Info.csv")
+
 getColor <- function(table) {
   sapply(table$CountperDay, function(CountperDay) {
   if(CountperDay <= 350) {
@@ -112,24 +106,32 @@ icons <- awesomeIcons(
   icon = 'ios-close',
   iconColor = 'black',
   library = 'ion',
-  markerColor = getColor(top10cor)
+  markerColor = getColor(top10_leaflet)
 ) 
 
-leaflet(data = top10cor[1:10,]) %>%
-  addTiles() %>%
-addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(StreetName), label=~as.character(StreetName))
-```
+l <- leaflet(data = top10_leaflet[1:10,])
 
-```{r leaflet_markersSatllite}
-leaflet(data = top10cor[1:10,]) %>%
-  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
-  addAwesomeMarkers(~lon, ~lat, icon = icons, popup = ~as.character(StreetName), label = ~as.character(StreetName))
+esri <- grep("^Esri", providers, value = TRUE)
+
+for (provider in esri[c(2,4,5,11)]) {
+  l <- l %>% addProviderTiles(provider, group = provider)
+}
+
+l %>%
+  addLayersControl(baseGroups = names(esri[c(2,4,5,11)]),
+    options = layersControlOptions(collapsed = FALSE)) %>%
+  addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
+    position = "bottomleft") %>%
+  htmlwidgets::onRender("
+    function(el, x) {
+      var myMap = this;
+      myMap.on('baselayerchange',
+        function (e) {
+          myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+        })
+    }") %>%
+addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(info), label=~as.character(StreetName))
+
 ```
-- **LONSDALE STREET**	: Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.
-- **KING STREET**	 : A key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues.
-- **JOLIMONT STREET**	: Features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground.
-- **EXHIBITION STREET**	: There a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. I also the heart of working district
-- **WILLIAM STREET**	: A major street in the city, there are notable landmarks on William Street include the Queen Victoria Market, the Flagstaff Gardens, Immigration Museum, Supreme Court of Victoria, AMP Square,
-- **WELLINGTON PARADE SOUTH** : It's located between parks and residential building.
 
 # DEADLINE : TOMORROW
