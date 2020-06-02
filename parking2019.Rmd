@@ -97,22 +97,39 @@ best_locations = leaflet() %>%
 ```
 
 ```{r leaflet_markers}
+getColor <- function(table) {
+  sapply(table$CountperDay, function(CountperDay) {
+  if(CountperDay <= 350) {
+    "green"
+  } else if(CountperDay <= 450) {
+    "orange"
+  } else {
+    "red"
+  } })
+}
+
+icons <- awesomeIcons(
+  icon = 'ios-close',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(top10cor)
+) 
+
 leaflet(data = top10cor[1:10,]) %>%
   addTiles() %>%
-  addMarkers(~lon, ~lat, popup = ~as.character(StreetName), label = ~as.character(StreetName))
+addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(StreetName), label=~as.character(StreetName))
 ```
 
 ```{r leaflet_markersSatllite}
 leaflet(data = top10cor[1:10,]) %>%
   addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
-  #addTiles() %>%
-  addMarkers(~lon, ~lat, popup = ~as.character(StreetName), label = ~as.character(StreetName))
+  addAwesomeMarkers(~lon, ~lat, icon = icons, popup = ~as.character(StreetName), label = ~as.character(StreetName))
 ```
--**LONSDALE STREET**	: Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.
--**KING STREET**	 : A key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues.
--**JOLIMONT STREET**	: Features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground.
--**EXHIBITION STREET**	: There a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. I also the heart of working district
--**WILLIAM STREET**	: A major street in the city, there are notable landmarks on William Street include the Queen Victoria Market, the Flagstaff Gardens, Immigration Museum, Supreme Court of Victoria, AMP Square,
--**WELLINGTON PARADE SOUTH** : It's located between parks and residential building.
+- **LONSDALE STREET**	: Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.
+- **KING STREET**	 : A key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues.
+- **JOLIMONT STREET**	: Features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground.
+- **EXHIBITION STREET**	: There a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. I also the heart of working district
+- **WILLIAM STREET**	: A major street in the city, there are notable landmarks on William Street include the Queen Victoria Market, the Flagstaff Gardens, Immigration Museum, Supreme Court of Victoria, AMP Square,
+- **WELLINGTON PARADE SOUTH** : It's located between parks and residential building.
 
 # DEADLINE : TOMORROW
