@@ -14,10 +14,15 @@ library(dplyr)
 library(readr)
 library(tidyverse)
 library(lubridate)
+library(tsibble)
+library(sugrrants)
+
 ```
 
 ```{r read}
 park19 <- read_csv("park19_tidy.csv")
+
+park19
 ```
 
 # Section 1 : What is the proportion of vehicles that overstayed for a given restriction? 1/2p,1p,2p,3p,4p
@@ -25,6 +30,78 @@ park19 <- read_csv("park19_tidy.csv")
 # Section 2 : What are the time frames where parking lots are the most vacant/occupied?
 
 # Section 3 : Parking availability: On a workday/non-workday, what are the time frames where parking lots are the most vacant/occupied? 
+
+```{r} 
+
+hols_2019 <- tsibble::holiday_aus(year = 2019, state = "VIC")
+
+#create dataset for holidays related to arr_date
+park_2019_hols <- park19 %>% 
+  mutate(weekday = wday(arr_date, label = TRUE, week_start = 1),
+         workday = if_else(
+           condition = arr_date %in% hols_2019$date | weekday %in% c("Sat", "Sun"),
+           true = "holidays",
+           false = "workday"))
+
+```
+
+```{r workdays-vs-non-work}
+ggplot(park_2019_hols,
+       aes(x = as.factor(arr_hour),
+           y = DurationMinutes,
+            group = arr_date, # Because there are duplicate date in different months, so we use this
+           # colour = SignPlateID) 
+       ))+
+  geom_line(size = 0.3,
+            alpha = 0.3) +
+  facet_grid(SignPlateID~workday,
+             labeller = labeller(StreetName = label_wrap_gen(20))) +
+  scale_colour_brewer(palette = "Set2", name = "SignPlateID") +
+  theme(legend.position = "none")
+```
+
+SignPlateID 3 only Sunday
+SignPlateID 583 is for disability (never occupied)
+SignPlateID 508 is Mon-Sat 6.30 to 20.30 (small window)
+
+```{r}
+plat_508 <- park_2019_hols %>%
+  select(arr_date, arr_hour, workday, SignPlateID, Sign, DurationMinutes) %>% 
+  filter(SignPlateID == 508) %>%
+  group_by(arr_date, workday, arr_hour)
+
+plat_508
+ggplot(plat_508,
+       aes(x = as.factor(arr_hour),
+           y = DurationMinutes,
+            group = arr_date, # Because there are duplicate date in different months, so we use this
+                  ))+
+  geom_line(size = 0.3,
+            alpha = 0.3) +
+  facet_grid(~workday,
+             labeller = labeller(StreetName = label_wrap_gen(20))) +
+  scale_colour_brewer(palette = "Set2", name = "StreetName") +
+  theme(legend.position = "none")
+```
+
+
+```{r calendar-plot}
+
+russel_cal <- park_2019_hols %>% 
+  frame_calendar(x = arr_hour,
+                 y = DurationMinutes,
+                 date = arr_date)
+
+gg_cal <- russel_cal %>% 
+  ggplot(aes(x = .arr_hour,
+             y = .DurationMinutes,
+             colour = workday,
+             group = arr_date)) +
+  geom_line()
+
+prettify(gg_cal) +
+  theme(legend.position = "bottom")
+```
 
 # Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?  **we need a new dataset here**
 
