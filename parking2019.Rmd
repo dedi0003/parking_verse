@@ -26,7 +26,7 @@ library(stringr)
 ```
 
 ```{r read-in, cache = TRUE}
-parking2019 <- read.csv(here::here("data/On-street_Car_Parking_Sensor_Data_-_2019.csv"))
+parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
 
 ```{r clean-parking2019}
@@ -35,7 +35,7 @@ parking2019_tidy <- parking2019 %>%
   # Retrieve Lonsdale Street data
   ## Remove parking lots without parking signs  
   filter(StreetName == "LONSDALE STREET",
-         !(is.na(Sign))) %>% 
+         !(is.na(SignPlateID))) %>% 
   # Separate date and time variables
    separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ") %>%
    separate(DepartureTime, into = c("dep_date", "dep_time"), sep = " ")
@@ -67,274 +67,77 @@ parking2019_tidy <- parking2019_tidy %>%
 parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
 ```
 
-- Brendi
-
-
-```{r read}
-park19 <- read_csv("park19_tidy.csv") %>% 
-  mutate(sign_rule = strtrim(Sign, 3))
-
-# park19 %>% 
-#   group_by(arr_date) %>% 
-#   summarise(duration = sum(DurationMinutes)) %>% 
-#   arrange(desc(arr_date))
+```{r summary-violations}
+summ_parking2019_vio <- parking2019_tidy %>%
+  group_by(InViolation) %>%
+  summarise(total = sum(n()))
 ```
 
-```{r plot-temporal-patterns}
-ggplot(park19,
-       aes(x = arr_date, 
-           y = DurationMinutes,
-           color = sign_rule)) +
-  geom_line(size = 0.3) +
-  facet_grid(SignPlateID ~ ., 
-             # this code presents the facets in a nice way
-             labeller = labeller(SignPlateID = label_wrap_gen(20))) +
-  # this code mades the x axis a bit nicer to read
-    labs(x = "Date Time")
-```
+Facts:
+> Parking Services Officers may mark the tire of a vehicle parked in a time-restricted area& come back as soon as you overstay the time restriction.
+> Inside Melbourne CBD, the parking fees for on street-parking is [$7/hr](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx).
+
+Data:
+> In 2019, a total of 249,216 instances where a car parked& departed.
+> Of this, 10,191 (2.918%) violated the restriction.
+* This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! $`r 124*summ_parking2019_vio[,2]` were paid just for the fines in Lonsdale Street!
 
 
-# Section 1 : What is the proportion of vehicles that overstayed for a given restriction? 1/2p,1p,2p,3p,4p
+# Along Lonsdale Street, which locations do most vehicles overstay in?
 
-# Section 2 : What are the time frames where parking lots are the most vacant/occupied?
-
-# Section 3 : Parking availability: On a workday/non-workday, what are the time frames where parking lots are the most vacant/occupied? 
-
-```{r} 
-
-hols_2019 <- tsibble::holiday_aus(year = 2019, state = "VIC")
-
-
-#create dataset for holidays related to arr_date
-park_2019_hols <- park19 %>% 
-  mutate(weekday = wday(arr_date, label = TRUE, week_start = 1),
-         workday = if_else(
-           condition = arr_date %in% hols_2019$date | weekday %in% c("Sat", "Sun"),
-           true = "holidays",
-           false = "workday"))
-
-```
-
-```{r workdays-vs-non-work}
-ggplot(park_2019_hols,
-       aes(x = as.factor(arr_hour),
-           y = DurationMinutes,
-            group = arr_date, # Because there are duplicate date in different months, so we use this
-           # colour = SignPlateID) 
-       ))+
-  geom_line(size = 0.3,
-            alpha = 0.3) +
-  facet_grid(SignPlateID~workday,
-             labeller = labeller(StreetName = label_wrap_gen(20))) +
-  scale_colour_brewer(palette = "Set2", name = "SignPlateID") +
-  theme(legend.position = "none")
-```
-
-SignPlateID 3 only Sunday
-SignPlateID 583 is for disability (never occupied)
-SignPlateID 508 is Mon-Sat 6.30 to 20.30 (small window)
-
-```{r}
-plat_508 <- park_2019_hols %>%
-  select(arr_date, arr_hour, workday, SignPlateID, Sign, DurationMinutes) %>% 
-  filter(SignPlateID == 508) %>%
-  group_by(arr_date, workday, arr_hour)
-
-plat_508
-ggplot(plat_508,
-       aes(x = as.factor(arr_hour),
-           y = DurationMinutes,
-            group = arr_date, # Because there are duplicate date in different months, so we use this
-                  ))+
-  geom_line(size = 0.3,
-            alpha = 0.3) +
-  facet_grid(~workday,
-             labeller = labeller(StreetName = label_wrap_gen(20))) +
-  scale_colour_brewer(palette = "Set2", name = "StreetName") +
-  theme(legend.position = "none")
-```
-
-
-```{r calendar-plot}
-
-# cek_dec <- park_2019_hols %>%
-#   filter(str_detect(arr_date, c("2019-12"))) %>%
-#   arrange(arr_date)
-
-
-
-russel_cal <- park_2019_hols %>%
-  frame_calendar(x = arr_hour,
-                 y = DurationMinutes,
-                 date = arr_date)
-
-gg_cal <- russel_cal %>% 
-  ggplot(aes(x = .arr_hour,
-             y = .DurationMinutes,
-             colour = as.factor(workday),
-             group = arr_date)) +
-            labs(colour = "Year")+
-  geom_line()
-
-prettify(gg_cal) +
-  theme(legend.position = "bottom")
-```
-
-# Modelling 
-
-```{r process-walking-data}
-park19_lm <- park_2019_hols %>% 
-  mutate_at(.vars = vars(StreetName,
-                         SignPlateID,
-                         sign_rule,
-                         arr_hour,
-                         workday
-                          ),
-            as_factor) %>% 
-  mutate(log_duration = log1p(DurationMinutes))
-```
-
-
-```{r fit-lm}
-park_fit_lm <- lm (
-  formula = log_duration ~ arr_hour + weekday + SignPlateID + sign_rule,
-  data = park19_lm
-)
-
-# statistic variables
-park_fit_lm
-```
-
-```{r glance-fit-lm}
-# Extract model fit summary
-glance(park_fit_lm)
-```
-
-
-```{r aug-broom-plot}
-park_aug_lm <- augment(park_fit_lm, data = park19_lm)
-
-
-
-ggplot(park_aug_lm,
-       aes(x = .fitted,
-       y = log_duration,
-       color = sign_rule)) +
-  geom_point(alpha = 0.4)+
-  geom_smooth(method= "lm", size = 2, color = "yellow", se= FALSE)+
-  labs(color = "Sign Rule")
+```{r parking-violation}
+parking2019_vio <- parking2019_tidy %>%
+  filter(InViolation == "true")
 ```
 
 ```{r}
-# Residual vs plot
-
-park_aug_lm %>% 
-  ggplot(aes(x = .fitted,
-             y = .resid)) +
-  geom_point() +
-  facet_wrap(~StreetName)+
-  geom_abline(size = 2, color = "darkred")
-
-
+parking2019_vio %>%
+  group_by(BetweenStreet1) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n))
 ```
 
+* Out of the all five streets, Exhibition Street had the most number of vehicles which violated the time restriction.
+* Exhibition St and Russel St are actually right next to one another! What do they have in common? (*elaborate*) - many rooftop bars etc.
 
 ```{r}
-# Classification model
-park_rp <- rpart(log_duration ~ arr_hour + weekday + SignPlateID + sign_rule, data = park19_lm, control = rpart.control(minsplit = 2)) 
-
-rpart.plot(park_rp)
-
-printcp(park_rp)
-
+parking2019_vio %>%
+  group_by(BetweenStreet1, Sign) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  head(10)
 ```
 
+* We'd expect more vehicles to overstay in parking lots with a shorter time frame
+* BUT, most vehicles overstayed in where the time restrictions were 2 hours
 
-# Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?  **we need a new dataset here**
+# Analysis 1: Arrival& Departure times of cars that overstayed
 ```{r}
-#top10 <- read_csv("On-street_Car_Parking_Sensor_Data_-_2019.csv") 
-
-#print_table <- function(table, head){
-#  table %>%
-#  group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
-#  summarise(CountperDay= n()/365) %>%
-#   arrange(desc(CountperDay)) %>%
-#  head(head)
-#}
-
-#save_table <- print_table(top10, 10)
-#write_csv(save_table, "Top10_Melb_Count.csv")
-
-top10_table <- read_csv("Top10_Melb_Count.csv")
-knitr::kable(top10_table, caption = "Top 10 busiest parking street in Melbourne") %>%
-kableExtra::kable_styling(bootstrap_options = "basic")
 
 ```
 
-```{r bincol}
-coord <- data_frame("lat" = c(-37.8147255,
-                              -37.8192437,
-                              -37.8101661,
-                              -37.8183015,
-                              -37.8156404,
-                              -37.809040,
-                              -37.8140175,
-                              -37.8153781,
-                              -37.8075632,
-                              -37.816335),
-                    "lon"=c(144.952553,
-                            144.9553465,
-                            144.9687394,
-                            144.9811929,
-                            144.976875,
-                            144.969121,
-                            144.9692056,
-                            144.9531639,
-                            144.9532773,
-                            144.978169))
 
-info <- data_frame("info" = c("Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.",
-"King Street is a key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues",
-"Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in amongst the areas businesses, shopping centres and hotels. China Town extends through a number of smaller alleys between Lonsdale and Bourke.",
-"Jolimont Street features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground",
-"Jolimont Street features parks, business precincts and a limited amount of residential accommodation. It's close to Fitzroy Garden and Melbourne Cricket Ground",
-"In Exhibition Street there a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. It also the heart of working district",
-"In Exhibition Street there a lot of luxurious hotels eg Marriott Hotel & Rydges Hotel. It also the heart of working district",
-"King Street is a key hub of Melbourne's nightlife and is home to many pubs, nightclubs, restaurants, and adult entertainment venues",
-"William Street is a major street in the city, there are notable landmarks on William Street include the Queen Victoria Market, the Flagstaff Gardens, Immigration Museum, Supreme Court of Victoria, AMP Square",
-"Wellington Parade South, it's located between parks and residential building"))
-
-top10_cor_info <- bind_cols(top10_table, coord, info)
-write_csv(top10_cor_info, "Top10_Melb_Cor_Info.csv")
+# Analysis 2: Avg. time overstayed for each sign
+```{r}
+unique(parking2019_vio$Sign)
 ```
 
-```{r leaflet_markers}
-top10_leaflet <- read_csv("Top10_Melb_Cor_Info.csv")
+```{r}
+parking2019_vio <- parking2019_vio %>%
+  # Extract specfic signs, assign them according to minutes
+  mutate(restrict_mins = case_when(
+    str_starts(Sign, "1/2 P") ~ 30, 
+    str_starts(Sign, "1P") ~ 60,
+    str_starts(Sign, "2P") ~ 120
+    ),
+    # Compute amount of mins overstayed
+    overstay_mins = DurationMinutes - restrict_mins)
+```
 
-getColor <- function(table) {
-  sapply(table$CountperDay, function(CountperDay) {
-  if(CountperDay <= 350) {
-    "green"
-  } else if(CountperDay <= 450) {
-    "orange"
-  } else {
-    "red"
-  } })
-}
-
-icons <- awesomeIcons(
-  icon = 'ios-close',
-  iconColor = 'black',
-  library = 'ion',
-  markerColor = getColor(top10_leaflet)
-) 
-
-l <- leaflet(data = top10_leaflet[1:10,])
-
-l %>%
-addTiles() %>%
-addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(info), label=~as.character(StreetName))
+```{r}
 
 ```
 
-# DEADLINE : TOMORROW
+
+
+
