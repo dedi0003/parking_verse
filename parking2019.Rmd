@@ -21,34 +21,49 @@ library(ggmap)
 library(here)
 library(mapview)
 library(broom)
-library(rpart.plot)
 library(stringr)
 
 ```
 
 ```{r read}
-park19 <- read_csv("park19_tidy.csv") %>% 
-  mutate(sign_rule = strtrim(Sign, 3))
+parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
+  mutate(sign_rule = strtrim(Sign, 3), arr_date = date(arr_date))
 
-# park19 %>% 
-#   group_by(arr_date) %>% 
-#   summarise(duration = sum(DurationMinutes)) %>% 
-#   arrange(desc(arr_date))
 ```
 
 ```{r plot-temporal-patterns}
-ggplot(park19,
-       aes(x = arr_date, 
+# parking by sign_rule
+ggplot(parking2019_tidy,
+       aes(x = as.Date(arr_date), 
            y = DurationMinutes,
            color = sign_rule)) +
   geom_line(size = 0.3) +
-  facet_grid(SignPlateID ~ ., 
+  facet_grid(sign_rule~StreetName, 
              # this code presents the facets in a nice way
              labeller = labeller(SignPlateID = label_wrap_gen(20))) +
   # this code mades the x axis a bit nicer to read
+    scale_x_date(date_labels = "%d %b %Y", 
+                   date_minor_breaks = "1 month")+
+    scale_colour_brewer(palette = "Set2", name = "sign_rule")+
     labs(x = "Date Time")
 ```
 
+```{r plot-temporal-patterns}
+# parking streetname??????????????????????
+
+ggplot(parking2019_tidy,
+       aes(x = as.Date(arr_date), 
+           y = DurationMinutes,
+           color = sign_rule)) +
+  geom_line(size = 0.3) +
+  facet_grid(sign_rule~StreetName, 
+             # this code presents the facets in a nice way
+             labeller = labeller(SignPlateID = label_wrap_gen(20))) +
+  # this code mades the x axis a bit nicer to read
+    scale_x_date(date_labels = "%d %b %Y", 
+                   date_minor_breaks = "1 month")+
+    labs(x = "Date Time")
+```
 
 # Section 1 : What is the proportion of vehicles that overstayed for a given restriction? 1/2p,1p,2p,3p,4p
 
@@ -62,7 +77,7 @@ hols_2019 <- tsibble::holiday_aus(year = 2019, state = "VIC")
 
 
 #create dataset for holidays related to arr_date
-park_2019_hols <- park19 %>% 
+park_2019_hols <- parking2019_tidy %>% 
   mutate(weekday = wday(arr_date, label = TRUE, week_start = 1),
          workday = if_else(
            condition = arr_date %in% hols_2019$date | weekday %in% c("Sat", "Sun"),
@@ -76,38 +91,36 @@ ggplot(park_2019_hols,
        aes(x = as.factor(arr_hour),
            y = DurationMinutes,
             group = arr_date, # Because there are duplicate date in different months, so we use this
-           # colour = SignPlateID) 
-       ))+
+           colour = sign_rule) 
+       )+
   geom_line(size = 0.3,
             alpha = 0.3) +
-  facet_grid(SignPlateID~workday,
+  facet_grid(sign_rule~workday,
              labeller = labeller(StreetName = label_wrap_gen(20))) +
-  scale_colour_brewer(palette = "Set2", name = "SignPlateID") +
-  theme(legend.position = "none")
+  scale_colour_brewer(palette = "Set2", name = "sign_rule") +
+  theme(legend.position = "none")+
+  labs(x = "Time Hour")
 ```
 
-SignPlateID 3 only Sunday
-SignPlateID 583 is for disability (never occupied)
-SignPlateID 508 is Mon-Sat 6.30 to 20.30 (small window)
 
 ```{r}
-plat_508 <- park_2019_hols %>%
-  select(arr_date, arr_hour, workday, SignPlateID, Sign, DurationMinutes) %>% 
-  filter(SignPlateID == 508) %>%
-  group_by(arr_date, workday, arr_hour)
-
-plat_508
-ggplot(plat_508,
-       aes(x = as.factor(arr_hour),
-           y = DurationMinutes,
-            group = arr_date, # Because there are duplicate date in different months, so we use this
-                  ))+
-  geom_line(size = 0.3,
-            alpha = 0.3) +
-  facet_grid(~workday,
-             labeller = labeller(StreetName = label_wrap_gen(20))) +
-  scale_colour_brewer(palette = "Set2", name = "StreetName") +
-  theme(legend.position = "none")
+# plat_508 <- park_2019_hols %>%
+#   select(arr_date, arr_hour, workday, SignPlateID, Sign, DurationMinutes) %>% 
+#   filter(SignPlateID == 508) %>%
+#   group_by(arr_date, workday, arr_hour)
+# 
+# plat_508
+# ggplot(plat_508,
+#        aes(x = as.factor(arr_hour),
+#            y = DurationMinutes,
+#             group = arr_date, # Because there are duplicate date in different months, so we use this
+#                   ))+
+#   geom_line(size = 0.3,
+#             alpha = 0.3) +
+#   facet_grid(~workday,
+#              labeller = labeller(StreetName = label_wrap_gen(20))) +
+#   scale_colour_brewer(palette = "Set2", name = "StreetName") +
+#   theme(legend.position = "none")
 ```
 
 
@@ -197,11 +210,11 @@ park_aug_lm %>%
 
 ```{r}
 # Classification model
-park_rp <- rpart(log_duration ~ arr_hour + weekday + SignPlateID + sign_rule, data = park19_lm, control = rpart.control(minsplit = 2)) 
-
-rpart.plot(park_rp)
-
-printcp(park_rp)
+# park_rp <- rpart(log_duration ~ arr_hour + weekday + SignPlateID + sign_rule, data = park19_lm, control = rpart.control(minsplit = 2)) 
+# 
+# rpart.plot(park_rp)
+# 
+# printcp(park_rp)
 
 ```
 
