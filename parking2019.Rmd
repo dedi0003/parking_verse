@@ -150,37 +150,35 @@ park19_lm <- park_2019_hols %>%
   mutate(log_duration = log1p(DurationMinutes))
 ```
 
-## Q3A: Fit a linear model (1 mark)
-
 
 ```{r fit-lm}
 park_fit_lm <- lm (
   formula = log_duration ~ arr_hour + weekday + SignPlateID + sign_rule,
   data = park19_lm
 )
-```
 
-## Q3B: Evaluate the model fit statistics (1 mark)
+# statistic variables
+park_fit_lm
+```
 
 ```{r glance-fit-lm}
 # Extract model fit summary
 glance(park_fit_lm)
 ```
 
-> Answer: The adjusted $R^2$ measures the goodness of fit in the regression model. The value here can be interpreted as the proportion of variance in log count explained by the changes in time, month, day of the week, precipitation, high and low temperature. That is, 52% of log count of pedestrians is explained by changes these variables. 
-
-
-## Q3C: Look at the model predictions (1 mark)
-
 
 ```{r aug-broom-plot}
 park_aug_lm <- augment(park_fit_lm, data = park19_lm)
 
+
+
 ggplot(park_aug_lm,
        aes(x = .fitted,
-       y = log_duration)) +
-  geom_point()+
-  geom_abline(size = 2, color = "pink")
+       y = log_duration,
+       color = sign_rule)) +
+  geom_point(alpha = 0.4)+
+  geom_smooth(method= "lm", size = 2, color = "yellow", se= FALSE)+
+  labs(color = "Sign Rule")
 ```
 
 ```{r}
