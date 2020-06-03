@@ -25,15 +25,6 @@ library(rpart.plot)
 library(stringr)
 ```
 
-```{r}
-# Questions:
-## How to separate date& time with am/pm
-## How to convert time to 24-hr format
-  separate(ArrivalTime, into = c("arr_date", "arr_time", "arr_pm_am"), sep =" ", extra = "merge")
-### How to plot graph with 24-hr format y-axis
-### How to plot "Whichever car arrives/departs at a one-hour time frame, count it"
-```
-
 ```{r read-in, cache = TRUE}
 parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
