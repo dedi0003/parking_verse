@@ -249,10 +249,59 @@ addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(StreetName), lab
 Predict
 ===========================
 
-Column
+Column {data-width=400}
 ------------------------------------
 
 ### Model building
+We _fit_ a _linear model_ on log-transformed duration for 2019, using a four-way interaction: arrival hour, work day or non-work day, signPlateID, and sign rule.
+
+$log(DurationMinutes + 1) =  arr hour_i \times weekday_i \ SignPlateID_i \times signrule_i$
+
+where arr_hour is a continuous variable, and the other three are categorical variables. 
+
+This model explains 43% of the variation in the data.
+
+Column {data-width=400}
+------------------------------------
+
+### Predicted versus observed usage {data-height=400}
+```{r process-walking-data}
+park19_lm <- park_2019_hols %>% 
+  mutate_at(.vars = vars(StreetName,
+                         SignPlateID,
+                         sign_rule,
+                         arr_hour,
+                         workday
+                          ),
+            as_factor) %>% 
+  mutate(log_duration = log1p(DurationMinutes))
+```
+
+```{r fit-lm}
+  park_fit_lm <- lm (
+    formula = log_duration ~ arr_hour + weekday + SignPlateID + sign_rule,
+    data = park19_lm
+  )
+  # statistic variables
+  park_fit_lm
+```
+
+```{r glance-fit-lm}
+# Extract model fit summary
+glance(park_fit_lm)
+```
+
+```{r aug-broom-plot}
+park_aug_lm <- augment(park_fit_lm, data = park19_lm)
+ggplot(park_aug_lm,
+       aes(x = .fitted,
+       y = log_duration,
+       color = sign_rule)) +
+  geom_point(alpha = 0.4)+
+  geom_smooth(method= "lm", size = 2, color = "yellow", se= FALSE)+
+  labs(color = "Sign Rule")
+```
+
 
 Explain
 ===========================
