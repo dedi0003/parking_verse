@@ -26,49 +26,43 @@ library(stringr)
 ```
 
 ```{r read-in, cache = TRUE}
-parking2019 <- read.csv(here::here("data/On-street_Car_Parking_Sensor_Data_-_2019.csv"))
+parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
 
-```{r clean-parking2019}
-# Retrieve Lonsdale street and its between streets
+```{r}
 parking2019_tidy <- parking2019 %>%
-  # Retrieve Lonsdale Street data
-  ## Remove parking lots without parking signs  
   filter(StreetName == "LONSDALE STREET",
-         !(is.na(Sign))) %>% 
-  # Separate date and time variables
-   separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ") %>%
-   separate(DepartureTime, into = c("dep_date", "dep_time"), sep = " ")
+         !(is.na(SignPlateID))) %>%  
+  select(-DeviceId,
+         -StreetMarker,
+         -StreetId,
+         -BetweenStreet2,
+         -BetweenStreet2ID,
+         -AreaName) %>%
+  separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ", extra = "merge") %>% 
+  separate(DepartureTime, into = c("dep_date", "dep_time"), sep =" ", extra = "merge")
+
+# Format time into 24-hour format
+parking2019_tidy$arr_time <- format(strptime(parking2019_tidy$arr_time, "%I:%M:%S %p"), "%H:%M")
+parking2019_tidy$dep_time <- format(strptime(parking2019_tidy$dep_time, "%I:%M:%S %p"), "%H:%M")
 
 # Format date variables from CHAR to DATE 
 parking2019_tidy$arr_date <- mdy(parking2019_tidy$arr_date)
 parking2019_tidy$dep_date <- mdy(parking2019_tidy$dep_date)
 
 # Extract hour& minutes 
-parking2019_tidy$arr_hour <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H")
+parking2019_tidy$arr_hour <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M"),"%H")
 parking2019_tidy$arr_min <- 
-format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")
-parking2019_tidy$dep_hour <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H")
-parking2019_tidy$dep_min <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")
-parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H: %M")
-parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H: %M")
-
-# remove unrelated variables
-parking2019_tidy <- parking2019_tidy %>%
-  select(-DeviceId,
-         -StreetMarker,
-         -StreetId,
-         -BetweenStreet2,
-         -BetweenStreet2ID,
-         -AreaName) 
+format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M"),"%M")
+parking2019_tidy$dep_hour <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M"),"%H")
+parking2019_tidy$dep_min <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M"),"%M")
+parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M"),"%H: %M")
+parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M"),"%H: %M")
 ```
 
 ```{r read-in-tidy-data, cache = TRUE}
 parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
 ```
-
-- Brendi
-
 
 ```{r read}
 park19 <- read_csv("park19_tidy.csv") %>% 
