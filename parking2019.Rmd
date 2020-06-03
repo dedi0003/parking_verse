@@ -113,13 +113,21 @@ parking2019_vio %>%
 
 # Analysis 1: Arrival& Departure times of cars that overstayed
 ```{r}
-
+parking2019_vio %>%
+  # Retrieve day of the week
+  mutate(arr_day = wday(arr_date, label = TRUE),
+         dep_day = wday(dep_date, label = TRUE)) %>%
+  mutate()
 ```
 
 
 # Analysis 2: Avg. time overstayed for each sign
 ```{r}
 unique(parking2019_vio$Sign)
+
+parking2019_vio %>%
+  group_by(Sign, BetweenStreet1) %>%
+  summarise(n = n())
 ```
 
 ```{r}
@@ -135,9 +143,27 @@ parking2019_vio <- parking2019_vio %>%
 ```
 
 ```{r}
-
+library(ggridges)
+ggplot(parking2019_vio) +
+  geom_density_ridges(
+    aes(
+      x = overstay_mins,
+      y = factor(restriction),
+      fill = factor(restriction)
+    ),
+    alpha = 0.6,
+    stat = "binline",  
+    bins = 30) +
+  # Edit x-axis, 0-100 separated by sequence of 'tens' 
+  ## Edit x-axis, 100 - 600 by sequences of '50' 
+  facet_wrap(~ BetweenStreet1) +
+  scale_fill_manual(values = c("#663300", "#006633","#330066")) +
+  labs(x = "Minutes overstayed", y = "") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  theme(legend.position="none")
 ```
 
-
+* No vehicles overstayed in the 1/2P signs in Queen St, Exhibition St& William St.
+*
 
 
