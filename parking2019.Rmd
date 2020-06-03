@@ -1,6 +1,6 @@
 ---
 title: "Untitled"
-author: "Putu Wahyu Saputra"
+author: "Parking_Verse"
 date: "6/1/2020"
 output: html_document
 ---
@@ -190,7 +190,7 @@ ggplot(parking2019_plot2) +
     alpha = 0.6,
     draw_quantiles = 0.5
   ) +
-  facet_wrap( ~ BetweenStreet1, nrow = 3) +
+  facet_wrap(~ BetweenStreet1, nrow = 3) +
   scale_fill_manual(values = c("#6495ed", "#ed6495")) +
   labs(x = "Arrival/Departure Time", y = "") +
   theme(legend.position = "none") 
@@ -201,11 +201,5 @@ ggplot(parking2019_plot2) +
   geom_boxplot(aes(x = arr_day, y = arr_dep_time, fill = arr_dep), alpha = 0.6) +
   facet_wrap( ~ BetweenStreet1, nrow = 3) +
   scale_fill_manual(values = c("#6495ed", "#ed6495"))
-```
-
-```{r}
-parking2019_tidy %>%
- group_by(BetweenStreet1, Sign) %>%
- summarise(n= n())
 ```
 
