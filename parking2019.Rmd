@@ -22,6 +22,7 @@ library(here)
 library(mapview)
 library(broom)
 library(stringr)
+library(kableExtra)
 ```
 
 # Data wrangling
@@ -81,7 +82,7 @@ parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>%
 ggplot(parking2019_tidy,
        aes(x = as.Date(arr_date), 
            y = DurationMinutes,
-           color = sign_rule)) +
+           color = InViolation)) +
   geom_line(size = 0.3) +
   facet_grid(sign_rule~StreetName, 
              # this code presents the facets in a nice way
@@ -89,8 +90,28 @@ ggplot(parking2019_tidy,
   # this code mades the x axis a bit nicer to read
     scale_x_date(date_labels = "%d %b %Y", 
                    date_minor_breaks = "1 month")+
-    scale_colour_brewer(palette = "Set2", name = "sign_rule")+
+    scale_colour_brewer(palette = "Set2", name = "Violated?")+
     labs(x = "Date Time")
+```
+
+```{r avgduration_sign}
+parking2019_tidy %>% 
+  group_by(sign_rule) %>%
+  summarise(avg_duration = mean(DurationMinutes)) %>%
+  kable() %>%
+kableExtra::kable_styling(bootstrap_options = "basic")
+
+```
+
+^just try to filter with betweenstreet1 through shiny so can compare each street
+
+```{r avgduration_betweenstreet}
+parking2019_tidy %>% 
+  group_by(BetweenStreet1) %>%
+  summarise(avg_duration = mean(DurationMinutes)) %>%
+  kable() %>%
+kableExtra::kable_styling(bootstrap_options = "basic")
+
 ```
 
 # Section 3 : Parking availability: On a workday/non-workday, what are the time frames where parking lots are the most vacant/occupied? 
