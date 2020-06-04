@@ -75,9 +75,16 @@ violation_ui
 sign_ui <- selectInput(inputId = "sign_id",
                        label = "Choose sign",
                        selected = "all",
-                       choices = c("1/2", "1P", "2P", "P D"))
+                       choices = c("all", "1/2", "1P", "2P", "P D"))
 
 sign_ui
+
+street_ui <- selectInput(inputId = "street_id",
+                       label = "Choose street",
+                       selected = "all",
+                       choices = c("all", "Exhibition Street", "King Street", "Queen Street", "Russell Street", "William Street"))
+
+street_ui
 ```
 
 Column {data-width=400}
@@ -129,31 +136,25 @@ prettify(gg_cal)
 
 ### Temporal Patterns
 ```{r plot-temporal-patterns}
-park_date <- reactive({
-  start_date <- input$selected_dates[1]
-  end_date <- input$selected_dates[2]
-  park_2019_hols %>% 
-    filter(between(arr_date, start_date, end_date))
-})
 
 sign <- reactive({
-  
-    if(input$sign_id != 'both')
-    {parking2019_tidy}
-    
-    else{
-      parking2019_tidy %>%
-        filter(sign_rule == input$sign_id)}
+   req(input$sign_id)
+    if (input$sign_id != 'all') {
+      data <- park_2019_hols
+    }
+    else
+    {
+      data <- park_2019_hols[park_2019_hols$sign_rule == input$sign_id,]
+        }
 })
 ```
 
 ```{r plot, out.width="100%"}
 renderPlot({
-  park_date <- park_date()
   
   sign <- sign()
   
-   ggplot(sign, aes(x = as.Date(arr_date),
+   ggplot(sign, aes(x = arr_date,
                        y = DurationMinutes,
                        color = sign_rule)) +
         geom_line(size=0.3) +
@@ -259,7 +260,7 @@ $log(DurationMinutes + 1) =  arr hour_i \times weekday_i \ SignPlateID_i \times 
 
 where arr_hour is a continuous variable, and the other three are categorical variables. 
 
-This model explains 43% of the variation in the data.
+This model explains 11.17% of the variation in the data.
 
 Column {data-width=400}
 ------------------------------------
@@ -290,18 +291,6 @@ park19_lm <- park_2019_hols %>%
 # Extract model fit summary
 glance(park_fit_lm)
 ```
-
-```{r aug-broom-plot}
-park_aug_lm <- augment(park_fit_lm, data = park19_lm)
-ggplot(park_aug_lm,
-       aes(x = .fitted,
-       y = log_duration,
-       color = sign_rule)) +
-  geom_point(alpha = 0.4)+
-  geom_smooth(method= "lm", size = 2, color = "yellow", se= FALSE)+
-  labs(color = "Sign Rule")
-```
-
 
 Explain
 ===========================
