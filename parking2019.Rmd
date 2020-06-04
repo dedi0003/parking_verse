@@ -363,9 +363,6 @@ parking2019_tidy %>%
   labs(x = "Date Time") +
   theme(axis.text.x = element_text(angle = 90)) +
   theme(legend.position = "none")
-
-
-
 ```
 
 ```{r avgduration_sign}
@@ -376,8 +373,6 @@ parking2019_tidy %>%
 kableExtra::kable_styling(bootstrap_options = "basic")
 
 ```
-
-^just try to filter with betweenstreet1 through shiny so can compare each street
 
 ```{r avgduration_betweenstreet}
 parking2019_tidy %>% 
@@ -406,14 +401,16 @@ park_2019_hols <- parking2019_tidy %>%
 ggplot(park_2019_hols,
        aes(x = as.factor(arr_hour),
            y = DurationMinutes,
-            group = arr_date, # Because there are duplicate date in different months, so we use this
+             # Because there are duplicate date in different months, so we use this
            colour = sign_rule) 
        )+
-  geom_line(size = 0.3,
-            alpha = 0.3) +
+  geom_boxplot(size = 0.3,
+            alpha = 0.8) +
   facet_grid(sign_rule~workday,
              labeller = labeller(StreetName = label_wrap_gen(20))) +
   scale_colour_brewer(palette = "Set2", name = "sign_rule") +
+  scale_y_continuous(breaks = c(seq(from = 0, to = 200, by = 20)),
+                     limits = c(0, 200)) +
   theme(legend.position = "none")+
   labs(x = "Time Hour")
 ```
