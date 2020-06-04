@@ -1,0 +1,398 @@
+---
+title: "Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(broom)
+library(shiny)
+library(lubridate)
+library(sugrrants)
+library(leaflet)
+library(ggmap)
+library(here)
+library(mapview)
+library(broom)
+library(stringr)
+```
+
+```{r loading-data}
+parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% mutate(sign_rule = strtrim(Sign, 3), arr_date = date(arr_date))
+
+top10_table <- read_csv("Top10_Melb_Count.csv")
+
+hols_2019 <- tsibble::holiday_aus(year = 2019, state = "VIC")
+
+#create dataset for holidays related to arr_date
+park_2019_hols <- parking2019_tidy %>% 
+  mutate(weekday = wday(arr_date, label = TRUE, week_start = 1),
+         workday = if_else(
+           condition = arr_date %in% hols_2019$date | weekday %in% c("Sat", "Sun"),
+           true = "holidays",
+           false = "workday"))
+```
+
+
+Overview
+===========================
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### User interactions?
+
+```{r calendar-controls, echo = FALSE}
+# date range inputs
+start_date <- ymd("2019-01-01")
+end_date <- ymd("2019-12-31")
+
+daterange_ui <- dateRangeInput(
+  "selected_dates", 
+  "Select Dates for Calendar Display", 
+  start = start_date, 
+  end = end_date, 
+  min = min(park_2019_hols$arr_date), 
+  max = max(park_2019_hols$arr_date)
+)
+
+daterange_ui
+
+violation_ui <- selectInput(inputId = "colour_lines",
+                       label = "Colour lines",
+                       selected = "workday",
+                       choices = c("workday", "InViolation"))
+
+violation_ui
+
+street_ui <- selectInput(inputId = "street_id",
+                       label = "Choose street",
+                       selected = "all",
+                       choices = c("all", "EXHIBITION STREET", "KING STREET", "QUEEN STREET", "RUSSELL STREET", "WILLIAM STREET"))
+
+street_ui
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Calendar plot {data-height=300}
+```{r calendarise, echo=FALSE}
+park_date <- reactive({
+  start_date <- input$selected_dates[1]
+  end_date <- input$selected_dates[2]
+  park_2019_hols %>% 
+    filter(between(arr_date, start_date, end_date))
+})
+
+selected_colour <- reactive({
+  sym(input$colour_lines)
+})
+
+
+calenderise <- reactive({
+  
+  park_date <- park_date()
+  
+    frame_calendar(park_date,
+                   x = arr_hour,
+                 y = DurationMinutes,
+                 date = arr_date)
+})
+
+
+```
+
+```{r draw-calendar, out.width="100%"}
+renderPlot({
+  calendar <- calenderise()
+  
+  colour <- selected_colour()
+  
+    gg_cal <- ggplot(calendar, 
+                     aes(x = .arr_hour,
+                         y = .DurationMinutes,
+             colour = workday,
+             group = arr_date)) +
+  geom_line(aes(colour = !!colour)) +
+  theme(legend.position = "bottom")
+    
+prettify(gg_cal)
+})
+```
+
+### Workdays vs Non-workdays {data-height=300}
+
+```{r workdays-vs-non-work}
+renderPlot({
+  ggplot(park_2019_hols,
+       aes(x = as.factor(arr_hour),
+           y = DurationMinutes,
+            group = arr_date, # Because there are duplicate date in different months, so we use this
+           colour = sign_rule) 
+       )+
+  geom_line(size = 0.3,
+            alpha = 0.3) +
+  facet_grid(sign_rule~workday,
+             labeller = labeller(StreetName = label_wrap_gen(20))) +
+  scale_colour_brewer(palette = "Set2", name = "sign_rule") +
+  theme(legend.position = "none")+
+  labs(x = "Time Hour")
+})
+```
+
+### Temporal Patterns {data-height=300}
+
+```{r plot-temporal-patterns}
+street <- reactive({
+  street_filtered <- park_2019_hols
+  
+  if(input$street_id != 'all')
+  street_filtered <- park_2019_hols %>%
+    filter(BetweenStreet1 == input$street_id)
+  
+  street_filtered
+})
+  
+ 
+renderPlot({
+  ggplot(street(),
+       aes(x = as.Date(arr_date), 
+           y = DurationMinutes,
+           color = InViolation)) +
+  geom_line(size = 0.3) +
+  facet_grid(sign_rule ~ StreetName, 
+             # this code presents the facets in a nice way
+             labeller = labeller(SignPlateID = label_wrap_gen(20))) +
+  # this code mades the x axis a bit nicer to read
+    scale_x_date(date_labels = "%d %b %Y", 
+                   date_minor_breaks = "1 month")+
+    scale_colour_brewer(palette = "Set2", name = "Violated?")+
+    labs(x = "Date Time")
+  
+})
+
+
+```
+
+```{r, echo = FALSE}
+
+#street <- reactive({
+ #parking2019_tidy <- parking2019_tidy[parking2019_tidy$BetweenStreet1 == input$street_id]
+#})
+
+```
+
+```{r plot, out.width="100%", echo = FALSE}
+#renderPlot({
+  
+  #street <- street()
+  
+ # ggplot(parking2019_tidy,
+  #     aes(x = as.Date(arr_date), 
+   #        y = DurationMinutes,
+    #       color = InViolation)) +
+  #geom_line(size = 0.3) +
+#  facet_grid(sign_rule~StreetName, 
+             # this code presents the facets in a nice way
+ #            labeller = labeller(SignPlateID = label_wrap_gen(20))) +
+  # this code mades the x axis a bit nicer to read
+  #  scale_x_date(date_labels = "%d %b %Y", 
+   #                date_minor_breaks = "1 month")+
+    #scale_colour_brewer(palette = "Set2", name = "Violated?")+
+  #  labs(x = "Date Time")
+#})
+```
+
+Column {data-width=200}
+-----------------------------------------------------------------------
+
+### Top 10 Busiest Parking Street in Melbourne
+
+```{r}
+knitr::kable(top10_table) %>%
+kableExtra::kable_styling(bootstrap_options = "basic")
+```
+
+
+### Map of 10 Busiest Parking Street in Melbourne
+
+```{r}
+coord <- data_frame("lat" = c(-37.8147255,
+                              -37.8192437,
+                              -37.8101661,
+                              -37.8183015,
+                              -37.8156404,
+                              -37.809040,
+                              -37.8140175,
+                              -37.8153781,
+                              -37.8075632,
+                              -37.816335),
+                    "lon"=c(144.952553,
+                            144.9553465,
+                            144.9687394,
+                            144.9811929,
+                            144.976875,
+                            144.969121,
+                            144.9692056,
+                            144.9531639,
+                            144.9532773,
+                            144.978169))
+
+
+top10cor <- bind_cols(top10_table,coord)
+
+# Map for locations
+cb_bbox <- make_bbox(lon = top10cor$lon,
+                     lat = top10cor$lat,
+                     f = 0.9)  
+
+best_locations = leaflet() %>%
+  # Base group
+  addProviderTiles(providers$Esri.WorldImagery, group="Satellite") %>%
+  # Add reciever location data
+  addCircles(
+    lng = top10cor$lon,
+    lat = top10cor$lat, 
+    fill=TRUE, color="red",
+    weight= 5,
+    radius = 2,
+    stroke = FALSE, fillOpacity = 1)
+
+getColor <- function(table) {
+  sapply(table$CountperDay, function(CountperDay) {
+  if(CountperDay <= 350) {
+    "green"
+  } else if(CountperDay <= 450) {
+    "orange"
+  } else {
+    "red"
+  } })
+}
+
+icons <- awesomeIcons(
+  icon = 'ios-close',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(top10cor)
+) 
+
+leaflet(data = top10cor[1:10,]) %>%
+  addTiles() %>%
+addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(StreetName), label=~as.character(StreetName))
+```
+
+
+
+Predict
+===========================
+
+Column {data-width=400}
+------------------------------------
+
+### Model building
+We _fit_ a _linear model_ on log-transformed duration for 2019, using a four-way interaction: arrival hour, work day or non-work day, signPlateID, and sign rule.
+
+$log(DurationMinutes + 1) =  arr hour_i \times weekday_i \ SignPlateID_i \times signrule_i$
+
+where arr_hour is a continuous variable, and the other three are categorical variables. 
+
+This model explains 11.17% of the variation in the data.
+
+Column {data-width=400}
+------------------------------------
+
+### Predicted versus observed usage {data-height=400}
+```{r process-walking-data}
+park19_lm <- park_2019_hols %>% 
+  mutate_at(.vars = vars(StreetName,
+                         SignPlateID,
+                         sign_rule,
+                         arr_hour,
+                         workday
+                          ),
+            as_factor) %>% 
+  mutate(log_duration = log1p(DurationMinutes))
+```
+
+```{r fit-lm}
+  park_fit_lm <- lm (
+    formula = log_duration ~ arr_hour + weekday + SignPlateID + sign_rule,
+    data = park19_lm
+  )
+  # statistic variables
+  park_fit_lm
+```
+
+```{r glance-fit-lm}
+# Extract model fit summary
+glance(park_fit_lm)
+```
+
+Explain
+===========================
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Data
+Our dataset shows the records of cars parking in the streets of Melbourne CBD in 2019. For each parking lots, there will be sensors in it to track when a vehicle arrives and departs.
+
+Each record includes the restriction of the bay and whether the vehicle overstayed that restriction. An event will also state the time that the parking lot is empty or vacant. 
+
+```{r}
+parking2019_tidy <- read.csv("parking2019_tidy.csv")
+parking2019_tidy
+#should we put in the original dataset instead?
+```
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Making a model and predictions
+We also fitted a linear model to the data.
+
+
+Data cleaning
+===========================
+Here are the code that we used for cleaning and wrangling the data. 
+
+     #Retrieve Lonsdale street and its between streets_
+      parking2019_tidy <- parking2019 %>%  
+      
+    #Retrieve Lonsdale Street data  
+    #Remove parking lots without parking signs  
+      filter(StreetName == "LONSDALE STREET",
+         !(is.na(Sign))) %>%   
+    
+    #Separate date and time variables  
+    separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ") %>%
+    separate(DepartureTime, into = c("dep_date", "dep_time"), sep = " ")  
+      
+    #Format date variables from CHAR to DATE  
+    parking2019_tidy$arr_date <- mdy(parking2019_tidy$arr_date)  
+    parking2019_tidy$dep_date <- mdy(parking2019_tidy$dep_date)  
+      
+    #Extract hour& minutes  
+    parking2019_tidy$arr_hour <-    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H")  
+    parking2019_tidy$arr_min <- 
+    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
+    parking2019_tidy$dep_hour <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H")  
+    parking2019_tidy$dep_min <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
+    parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H: %M")  
+    parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H: %M")  
+
+    #remove unrelated variables_  
+    parking2019_tidy <- parking2019_tidy %>%
+    select(-DeviceId,
+         -StreetMarker,
+         -StreetId,
+         -BetweenStreet2,
+         -BetweenStreet2ID,
+         -AreaName)
+
+
+References
+===========================
