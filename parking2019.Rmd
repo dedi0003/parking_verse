@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, cache=TRUE)
 
 ```{r libraries}
 library(dplyr)
+library(kableExtra)
 library(readr)
 library(tidyverse)
 library(lubridate)
@@ -18,6 +19,7 @@ library(tsibble)
 library(sugrrants)
 library(leaflet)
 library(ggmap)
+library(ggridges)
 library(here)
 library(mapview)
 library(broom)
@@ -198,6 +200,142 @@ parking2019_plot2 %>% ggplot() +
   theme(legend.position = "bottom") 
 ```
 
+
+```{r summary-violations}
+summ_parking2019_vio <- parking2019_tidy %>%
+  group_by(InViolation) %>%
+  summarise(total = sum(n())) 
+  
+kable(summ_parking2019_vio,
+      caption = "Proportion of vehicles in violation of parking restriction") %>%
+  kable_styling(bootstrap_options = "bordered")
+```
+
+> Parking Services Officers may mark the tire of a vehicle parked in a time-restricted area& come back as soon as you overstay the time restriction.
+> Inside Melbourne CBD, the parking fees for on street-parking is [$7/hr](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx).
+
+Data:
+> In 2019, a total of 249,216 instances where a car parked& departed.
+> Of this, 10,191 (2.918%) violated the restriction.
+> This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
+
+
+# Along Lonsdale Street, which locations do most vehicles overstay in?
+
+```{r parking-violation}
+parking2019_vio <- parking2019_tidy %>%
+  filter(InViolation == "true")
+```
+
+```{r}
+parking2019_vio %>%
+  group_by(BetweenStreet1) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  kable(caption = "Adjacent streets with the most restriction violations") %>%
+  kable_styling(bootstrap_options = c("bordered", "striped"))
+```
+
+> Out of the all five streets, Exhibition Street had the most number of vehicles which violated the time restriction.
+> Exhibition St and Russel St are actually right next to one another! What do they have in common? (*elaborate*) - many rooftop bars etc.
+
+```{r}
+parking2019_vio %>%
+  group_by(BetweenStreet1, Sign) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  head(10) %>%
+  kable(caption = "Top 10 most common parking signs which are violated") %>%
+  kable_styling(bootstrap_options = c("bordered", "striped"))
+```
+
+> We'd expect more vehicles to overstay in parking lots with a shorter time frame
+> BUT, most vehicles overstayed in where the time restrictions were 2 hours
+
+```{r}
+parking2019_vio <- parking2019_vio %>%
+  # Extract specfic signs, assign them according to minutes
+  mutate(restrict_mins = case_when(
+    str_starts(Sign, "1/2 P") ~ 30, 
+    str_starts(Sign, "1P") ~ 60,
+    str_starts(Sign, "2P") ~ 120),
+  # Extract parking signs, assign them into respective factors 
+    restriction = case_when(
+    str_starts(Sign, "1/2 P") ~ "1/2P", 
+    str_starts(Sign, "1P") ~ "1P",
+    str_starts(Sign, "2P") ~ "2P"
+    ),
+    # Compute amount of mins overstayed
+    overstay_mins = DurationMinutes - restrict_mins)
+```
+
+```{r}
+require(ggridges)
+ggplot(parking2019_vio) +
+  geom_density_ridges(
+    aes(
+      x = overstay_mins,
+      y = factor(restriction),
+      fill = factor(restriction)
+    ),
+    alpha = 0.6,
+    stat = "binline",
+    bins = 45
+  ) +
+  scale_x_continuous(breaks = c(seq(from = 0, to = 300, by = 10)),
+                     limits = c(0, 300)) +
+  facet_wrap( ~ BetweenStreet1, nrow = 3) +
+  scale_fill_manual(values = c("#663300", "#006633", "#330066")) +
+  labs(x = "Minutes overstayed", y = "") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  theme(legend.position = "none") +
+  theme(axis.title.x = element_text(size = 12, 
+                                    face = "bold", 
+                                    margin = unit(c(1.5, 0, 0, 0), "lines"))) +
+  ggtitle("Density estimate of vehicles who overstayed restrictions")
+```
+
+> No vehicles overstayed in the 1/2P signs in Queen St, Exhibition St& William St.
+
+
+# Analysis 2: Arrival& Departure times of cars that overstayed
+```{r}
+parking2019_vio <- parking2019_vio %>%
+  # Retrieve day of the week 
+  mutate(arr_day = wday(arr_date, label = TRUE, week_start = 1),
+         dep_day = wday(dep_date, label = TRUE, week_start = 1))
+```
+
+```{r}
+parking2019_plot2 <- parking2019_vio 
+
+# Format CHAR to TIME variable  
+parking2019_plot2$arr_time <- 
+  as.POSIXct(parking2019_plot2$arr_time, format="%H:%M")
+parking2019_plot2$dep_time <-
+  as.POSIXct(parking2019_plot2$dep_time, format="%H:%M")
+
+parking2019_plot2 <- parking2019_plot2 %>%
+  # Group arrival and departure times as arr_dep variable
+    pivot_longer(c(arr_time, dep_time), 
+               names_to = "arr_dep",
+               values_to = "arr_dep_time")
+```
+
+```{r analysis2}
+parking2019_plot2 %>% ggplot() +
+  geom_violin(
+    aes(x = arr_day, y = arr_dep_time, colour = arr_dep),
+    scale = "count",
+    alpha = 0.6,
+    draw_quantiles = 0.5
+  ) +
+  facet_wrap(~ BetweenStreet1, nrow = 3) +
+  scale_colour_manual(values = c("#00468b", "#009700")) +
+  labs(x = "Arrival/Departure Time", y = "") +
+  theme(legend.position = "bottom") 
+```
+
 # Section 2 : What are the time frames where parking lots are the most vacant/occupied?
 
 ```{r read}
@@ -262,7 +400,6 @@ park_2019_hols <- parking2019_tidy %>%
            condition = arr_date %in% hols_2019$date | weekday %in% c("Sat", "Sun"),
            true = "holidays",
            false = "workday"))
-
 ```
 
 ```{r workdays-vs-non-work}
@@ -281,8 +418,6 @@ ggplot(park_2019_hols,
   labs(x = "Time Hour")
 ```
 
-
-
 ```{r calendar-plot}
 russel_cal <- park_2019_hols %>%
   frame_calendar(x = arr_hour,
@@ -300,8 +435,6 @@ gg_cal <- russel_cal %>%
 prettify(gg_cal) +
   theme(legend.position = "bottom")
 ```
-
-# Modelling 
 
 ```{r process-parking-data}
 park19_lm <- park_2019_hols %>% 
@@ -333,19 +466,9 @@ glance(park_fit_lm)
 ```
 
 
-```{r aug-broom-plot}
-park_aug_lm <- augment(park_fit_lm, data = park19_lm)
 
 
-
-ggplot(park_aug_lm,
-       aes(x = .fitted,
-       y = log_duration,
-       color = sign_rule)) +
-  geom_point(alpha = 0.4)+
-  geom_smooth(method= "lm", size = 2, color = "yellow", se= FALSE)+
-  labs(color = "Sign Rule")
-```
+# Analysis 1: Avg. time overstayed for each sign
 
 ```{r res-fitted}
 # Residual vs plot
@@ -445,4 +568,4 @@ addTiles() %>%
 addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(info), label=~as.character(StreetName))
 ```
 
-# DEADLINE : TOMORROW
+
