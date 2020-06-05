@@ -30,19 +30,11 @@ library(ggpubr)
 
 # Data wrangling
 
-<<<<<<< HEAD
 ```{r read-in, cache = TRUE, eval = FALSE}
 parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
 
 ```{r data-wrangle, eval = FALSE}
-=======
-```{r read-in, cache = TRUE, eval=FALSE}
-parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
-```
-
-```{r eval=FALSE}
->>>>>>> refs/remotes/origin/master
 parking2019_tidy <- parking2019 %>%
   filter(StreetName == "LONSDALE STREET",
          !(is.na(SignPlateID))) %>%  
@@ -73,11 +65,7 @@ parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format=
 parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M"),"%H: %M")
 ```
 
-<<<<<<< HEAD
 ```{r write-in-tidy-data, eval = FALSE}
-=======
-```{r read-in-tidy-data, cache = TRUE, eval=FALSE}
->>>>>>> refs/remotes/origin/master
 parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
 ```
 
@@ -238,92 +226,9 @@ Data:
 
 # Helen's Analysis: Time frames where parking lots are the most vacant/occupied.
 
-<<<<<<< HEAD
 ```{r create-sign-rule}
 parking2019_tidy <- parking2019_tidy %>% 
   mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
-=======
-```{r}
-require(ggridges)
-ggplot(parking2019_vio) +
-  geom_density_ridges(
-    aes(
-      x = overstay_mins,
-      y = factor(restriction),
-      fill = factor(restriction)
-    ),
-    alpha = 0.6,
-    stat = "binline",
-    bins = 45
-  ) +
-  scale_x_continuous(breaks = c(seq(from = 0, to = 300, by = 10)),
-                     limits = c(0, 300)) +
-  facet_wrap( ~ BetweenStreet1, nrow = 3) +
-  scale_fill_manual(values = c("#663300", "#006633", "#330066")) +
-  labs(x = "Minutes overstayed", y = "") +
-  theme(axis.text.x = element_text(angle = 90)) +
-  theme(legend.position = "none") +
-  theme(axis.title.x = element_text(size = 12, 
-                                    face = "bold", 
-                                    margin = unit(c(1.5, 0, 0, 0), "lines"))) +
-  ggtitle("Density estimate of vehicles who overstayed restrictions")
-```
-
-> No vehicles overstayed in the 1/2P signs in Queen St, Exhibition St& William St.
-
-
-# Analysis 2: Arrival& Departure times of cars that overstayed
-```{r}
-parking2019_vio <- parking2019_vio %>%
-  # Retrieve day of the week 
-  mutate(arr_day = wday(arr_date, label = TRUE, week_start = 1),
-         dep_day = wday(dep_date, label = TRUE, week_start = 1))
-```
-
-```{r}
-parking2019_plot2 <- parking2019_vio 
-
-# Format CHAR to TIME variable  
-parking2019_plot2$arr_time <- 
-  as.POSIXct(parking2019_plot2$arr_time, format="%H:%M")
-parking2019_plot2$dep_time <-
-  as.POSIXct(parking2019_plot2$dep_time, format="%H:%M")
-
-parking2019_plot2 <- parking2019_plot2 %>%
-  # Group arrival and departure times as arr_dep variable
-    pivot_longer(c(arr_time, dep_time), 
-               names_to = "arr_dep",
-               values_to = "arr_dep_time")
-```
-
-```{r analysis2}
-parking2019_plot2 %>% ggplot() +
-  geom_violin(
-    aes(x = arr_day, y = arr_dep_time, colour = arr_dep),
-    scale = "count",
-    alpha = 0.6,
-    draw_quantiles = 0.5
-  ) +
-  facet_wrap(~ BetweenStreet1, nrow = 3) +
-  scale_colour_manual(values = c("#00468b", "#009700")) +
-  labs(x = "Arrival/Departure Time", y = "") +
-  theme(legend.position = "bottom") 
-```
-
-# Section 2 : What are the time frames where parking lots are the most vacant/occupied?
-
-```{r read}
-parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
-  mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
-```
-
-```{r}
-# Just for information of parking Sign (no need to include in shiny)
-parking2019_tidy %>% 
-  group_by(Sign) %>% 
-  summarise(sign = n()) %>%
-  mutate(sign_rule = strtrim(Sign, 6))
->>>>>>> refs/remotes/origin/master
 ```
 
 
@@ -463,7 +368,6 @@ glance(park_fit_lm)
 > Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. However, the relationship is still not significant with r.squared only has 0.13. The reason of this is many variables that can explain the duration are not covered in the dataset, for example facilities near the parking spots (school, office, church, restaurant, mall/grocery shop) and people's motives (i.e. picking up passengers, waiting a friend).   
 
 
-<<<<<<< HEAD
 # Putu's Analysis: Prominent characteristics of the top 10 busiest parking streets in Melbourne CBD?
 
 ```{r top-10}
@@ -476,24 +380,7 @@ glance(park_fit_lm)
 # }
 # save_table <- print_table(parking2019, 10)
 # write_csv(save_table, "Top10_Melb_Count.csv")
-=======
-# Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?
 
-```{r top-10, eval = FALSE}
-# this is teh code to take 10 busiest parking spot from the main data
-#print_table <- function(table, head){
-#  table %>%
-#  group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
-#  summarise(CountperDay= n()/365) %>%
-#   arrange(desc(CountperDay)) %>%
-#  head(head)
-#}
-#save_table <- print_table(parking2019, 10)
-#write_csv(save_table, "Top10_Melb_Count.csv")
-```
->>>>>>> refs/remotes/origin/master
-
-```{r}
 top10_table <- read_csv("Top10_Melb_Count.csv")
 knitr::kable(top10_table, caption = "Top 10 busiest parking street in Melbourne") %>%
 kableExtra::kable_styling(bootstrap_options = "basic")
@@ -564,5 +451,3 @@ l %>%
 addTiles() %>%
 addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(info), label=~as.character(StreetName))
 ```
-
-
