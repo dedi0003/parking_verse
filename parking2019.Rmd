@@ -1,6 +1,6 @@
 ---
 title: "Parking in Melbourne"
-author: "Brendi Ang, Dea Vega Editya, Helen Evangelina, Putu Wahyu Saputra"
+author: "Brendi Ang, Dea Avega Editya, Helen Evangelina, Putu Wahyu Saputra"
 date: "6/1/2020"
 output: html_document
 ---
