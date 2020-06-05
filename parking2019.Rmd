@@ -25,6 +25,7 @@ library(mapview)
 library(broom)
 library(stringr)
 library(kableExtra)
+library(ggpubr)
 ```
 
 # Data wrangling
@@ -137,6 +138,7 @@ parking2019_vio <- parking2019_vio %>%
 ```
 
 ```{r}
+
 require(ggridges)
 ggplot(parking2019_vio) +
   geom_density_ridges(
@@ -340,18 +342,25 @@ parking2019_plot2 %>% ggplot() +
 
 ```{r read}
 parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
-  mutate(sign_rule = strtrim(Sign, 6))
+  mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
 
 ```
 
+```{r}
+# Just for information of parking Sign (no need to include in shiny)
+parking2019_tidy %>% 
+  group_by(Sign) %>% 
+  summarise(sign = n())
+```
+
+
 ```{r plot-temporal-patterns}
-# parking by sign_rule
 parking2019_tidy %>%
   group_by(arr_date, sign_rule, BetweenStreet1) %>%
   summarise(mean_duration = mean(DurationMinutes)) %>%
   ggplot(aes(x = arr_date,
              y = mean_duration,
-             colour = sign_rule)) +
+             group = sign_rule)) +
   geom_line(size = 0.3) +
   facet_grid(sign_rule ~ BetweenStreet1,
              # this code presents the facets in a nice way
@@ -364,6 +373,10 @@ parking2019_tidy %>%
   theme(axis.text.x = element_text(angle = 90)) +
   theme(legend.position = "none")
 ```
+
+> Some dates have unusual high duration of parking. It can be related to some holidays when people tend to park longer than usual. 
+> William street with sign rule 1P MTR has the highest average of parking duration among other "between streets".
+
 
 ```{r avgduration_sign}
 parking2019_tidy %>% 
@@ -415,6 +428,11 @@ ggplot(park_2019_hols,
   labs(x = "Time Hour")
 ```
 
+> On workdays, average duration of parking is high in the first hour of allowed time (i.e. 07.00 from the 07.00-20.00 parking time) and decline along the day. On the other hand, on holidays average duration of parking is quite fluctuated during the day in several spots of Lonsdale street. 
+> People tend to stick with the rule when the parking spot has meter system, the average parking duration in the meter spots is lower than the allowed time.  
+> Average duration of parking in non-meter parking spot tend to over the allowed time especially in the holidays.
+
+
 ```{r calendar-plot}
 russel_cal <- park_2019_hols %>%
   frame_calendar(x = arr_hour,
@@ -432,6 +450,15 @@ gg_cal <- russel_cal %>%
 prettify(gg_cal) +
   theme(legend.position = "bottom")
 ```
+
+> Unusual pattern of parking duration occurs mostly on holidays, such as: 
+10 June 2019 when people celebrate Queen's birthday,
+20-21 long easter holiday,
+25 April which is Anzac Day,
+5 November when people enjoys Melbourne Cup,
+25-26 Desember which is christmas holidays.
+
+> For working days, Jan and Feb has lower parking duration than other months. However, we don't have any information for the possible reasons.
 
 ```{r process-parking-data}
 park19_lm <- park_2019_hols %>% 
@@ -462,23 +489,7 @@ park_fit_lm
 glance(park_fit_lm)
 ```
 
-
-
-
-# Analysis 1: Avg. time overstayed for each sign
-
-```{r res-fitted}
-# Residual vs plot
-
-park_aug_lm %>% 
-  ggplot(aes(x = .fitted,
-             y = .resid)) +
-  geom_point() +
-  facet_wrap(~StreetName)+
-  geom_abline(size = 2, color = "darkred")
-
-
-```
+> Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. However, the relationship is still not significant with r.squared only has 0.13. The reason of this is many variables that can explain the duration are not covered in the dataset, for example facilities near the parking spots (school, office, church, restaurant, mall/grocery shop) and people's motives (i.e. picking up passengers, waiting a friend).   
 
 
 # Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?  **we need a new dataset here**
