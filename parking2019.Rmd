@@ -341,7 +341,6 @@ parking2019_plot2 %>% ggplot() +
 ```{r read}
 parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
   mutate(sign_rule = strtrim(Sign, 6))
-
 ```
 
 ```{r plot-temporal-patterns}
@@ -349,7 +348,7 @@ parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>%
 parking2019_tidy %>%
   group_by(arr_date, sign_rule, BetweenStreet1) %>%
   summarise(mean_duration = mean(DurationMinutes)) %>%
-  ggplot(aes(x = arr_date,
+  ggplot(aes(x = as.Date(arr_date),
              y = mean_duration,
              colour = sign_rule)) +
   geom_line(size = 0.3) +
