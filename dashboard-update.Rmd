@@ -394,7 +394,9 @@ valueBox("$124",
 
 ### GIF {data-height=500}
 
-![](https://media1.tenor.com/images/8276ab228d335a8a4742a60b16fbc724/tenor.gif)
+```{r, out.height= "50%"}
+knitr::include_graphics("https://media1.tenor.com/images/8276ab228d335a8a4742a60b16fbc724/tenor.gif")
+```
 [Source: Tenor](https://media1.tenor.com/images/8276ab228d335a8a4742a60b16fbc724/tenor.gif)
 
 Column {data-width = 450}
