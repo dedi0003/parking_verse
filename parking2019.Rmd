@@ -342,6 +342,7 @@ parking2019_plot2 %>% ggplot() +
 
 ```{r read}
 parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
+<<<<<<< HEAD
   mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
 
 ```
@@ -351,6 +352,9 @@ parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>%
 parking2019_tidy %>% 
   group_by(Sign) %>% 
   summarise(sign = n())
+=======
+  mutate(sign_rule = strtrim(Sign, 6))
+>>>>>>> 7d115220b6cd59b2eeeeef608b7bd279fba2178f
 ```
 
 
@@ -358,7 +362,7 @@ parking2019_tidy %>%
 parking2019_tidy %>%
   group_by(arr_date, sign_rule, BetweenStreet1) %>%
   summarise(mean_duration = mean(DurationMinutes)) %>%
-  ggplot(aes(x = arr_date,
+  ggplot(aes(x = as.Date(arr_date),
              y = mean_duration,
              group = sign_rule)) +
   geom_line(size = 0.3) +
