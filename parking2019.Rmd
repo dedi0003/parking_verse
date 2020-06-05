@@ -371,15 +371,15 @@ glance(park_fit_lm)
 # Putu's Analysis: Prominent characteristics of the top 10 busiest parking streets in Melbourne CBD?
 
 ```{r top-10}
-print_table <- function(table, head){
-  table %>%
-  group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
-  summarise(CountperDay= n()/365) %>%
-   arrange(desc(CountperDay)) %>%
-  head(head)
-}
-save_table <- print_table(parking2019, 10)
-write_csv(save_table, "Top10_Melb_Count.csv")
+# print_table <- function(table, head){
+#   table %>%
+#   group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
+#   summarise(CountperDay= n()/365) %>%
+#    arrange(desc(CountperDay)) %>%
+#   head(head)
+# }
+# save_table <- print_table(parking2019, 10)
+# write_csv(save_table, "Top10_Melb_Count.csv")
 
 top10_table <- read_csv("Top10_Melb_Count.csv")
 knitr::kable(top10_table, caption = "Top 10 busiest parking street in Melbourne") %>%
