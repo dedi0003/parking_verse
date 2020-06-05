@@ -10,8 +10,10 @@ runtime: shiny
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(tidyverse)
+library(emo)
 library(broom)
 library(shiny)
+library(ggridges)
 library(lubridate)
 library(sugrrants)
 library(leaflet)
@@ -47,9 +49,10 @@ Column {data-width=150}
 ### Summary
 > Of the 10 busiest parking lots in Melbourne, two of them are located in Londsdale.  
 
-> Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in between the businesses, shopping centers and hotels.
+> Lonsdale Street is the main street in Melbourne CBD. It is home to high-rise apartments and office buildings, with large shopping centres such as Melbourne Central. Its most notable functions encompasses its legal precint and courthouses.
 
 >
+
 
 Row {.tabset data-height=800}
 -----------------------------------------------------------------------
@@ -174,7 +177,7 @@ Non-workdays
 Column {data-width=250}
 -----------------------------------------------------------------------
 
-### User interactions {data-height=100}
+### User interactions {data-height=150}
 
 ```{r calendar-controls, echo = FALSE}
 # date range inputs
@@ -216,9 +219,9 @@ violation_ui
 
 >
 
-Column {data-width=550}
+Column {.tabset}
 -----------------------------------------------------------------------
-### Calendar plot
+### Calendar plot {data-height=800}
 ```{r calendarise, echo=FALSE}
 park_date <- reactive({
   start_date <- input$selected_dates[1]
@@ -245,7 +248,7 @@ calenderise <- reactive({
 
 ```
 
-```{r draw-calendar, out.width="100%"}
+```{r draw-calendar, out.width="100%", out.height="80%"}
 renderPlot({
   calendar <- calenderise()
   
@@ -262,8 +265,8 @@ prettify(gg_cal)
 })
 ```
 
-### Workdays vs Non-workdays
-```{r workdays-vs-non-work}
+### Workdays vs Non-workdays {data-height=800}
+```{r workdays-vs-non-work, out.height="100%"}
 renderPlot({
  ggplot(park_2019_hols,
        aes(x = as.factor(arr_hour),
@@ -287,7 +290,7 @@ renderPlot({
 
 Lonsdale Street
 ===========================
-Column {data-width=300}
+Column {data-width=600}
 -----------------------------------------------------------------------
 ### User interactions {data-height=250}
 
@@ -362,56 +365,112 @@ renderPlot({
 })
 ```
 
-Parking Violations
-===========================
-### Proportion of vehicles in violation of parking restriction
+```{r parking-violation-wrangling}
+parking2019_vio <- parking2019_tidy %>%
+  filter(InViolation == "true")
+```
+
+Parking Violations 
+=========================
+
+Row
+-------------------------------------------
+
+### Average parking fees
+```{r value-box1}
+valueBox("$7/hr", 
+         caption = "Average on-street parking fees", 
+         icon= "fas fa-car", 
+         color = "#cccc00")
+```
+
+### Average parking fines
+```{r value-box2}
+valueBox("$124", 
+         caption = "Average parking fines", 
+         icon= "fas fa-money-check-alt", 
+         color = "#cc0000")
+```
+
+### GIF {data-height=500}
+
+![](https://media1.tenor.com/images/8276ab228d335a8a4742a60b16fbc724/tenor.gif)
+[Source: Tenor](https://media1.tenor.com/images/8276ab228d335a8a4742a60b16fbc724/tenor.gif)
+
+Column {data-width = 450}
+--------------------------------------------------------------------
+
 ```{r summary-violations}
 summ_parking2019_vio <- parking2019_tidy %>%
   group_by(InViolation) %>%
   summarise(total = sum(n())) 
   
-kable(summ_parking2019_vio) %>%
-  kable_styling(bootstrap_options = "bordered")
+kable(summ_parking2019_vio,
+      caption = "Proportion of vehicles in violation of parking restriction") %>%
+  kable_styling(bootstrap_options = c("bordered", "striped"))
 ```
 
-### Adjacent streets with the most restriction violations
-```{r parking-violation}
-parking2019_vio <- parking2019_tidy %>%
-  filter(InViolation == "true")
-```
-
-```{r}
+```{r adj-street}
 parking2019_vio %>%
   group_by(BetweenStreet1) %>%
   summarise(n = n()) %>%
   arrange(desc(n)) %>%
-  kable() %>%
+  kable(caption = "Adjacent streets with the most restriction violations") %>%
   kable_styling(bootstrap_options = c("bordered", "striped"))
 ```
 
-### Top 10 most common parking signs which are violated
-```{r}
+### Parking Violations
+
+```{r top-10-vio}
 parking2019_vio %>%
   group_by(BetweenStreet1, Sign) %>%
   summarise(n = n()) %>%
   arrange(desc(n)) %>%
   head(10) %>%
-  kable() %>%
-  kable_styling(bootstrap_options = c("bordered", "striped"))
+  kable(caption = "Top 10 most common parking signs which are violated") %>%
+  kable_styling(bootstrap_options = "striped")
 ```
 
+Analysis: Parking Restrictions
+============================================================
 
-Overstayed Vehicles
-===========================
-Column {data-width=400}
------------------------------------------------------------------------
+Row {data-height=300}
+-------------------------------------------
 
+### Durations of overstay
+```{r value-box3}
+valueBox("0-20 mins", 
+         caption = "Most overstayed durations", 
+         icon = "far fa-clock", 
+         color = "#808080")
+```
 
-Column {.tabset data-width=600}
------------------------------------------------------------------------
-### Overstayed Vehicles
+### Number of violations
+```{r value-box4}
+valueBox("10,191 (2.9%)", 
+         caption = "of 349,216 vehicles violated parking restriction", 
+         icon= "fas fa-ban", 
+         color = "#cc0000")
+```
 
-```{r}
+### Fines paid
+```{r value-box5}
+valueBox("$1,263,684", 
+         caption = "Fines paid in Lonsdale Street", 
+         icon= "fas fa-receipt", 
+         color = "#008000")
+```
+
+### Summary `r emo::ji("police")`
+- These officers are quick and sneaky, even chalk tools and advances photography are used 
+- Although, proportion of vehicles that violated are relatively small, a hefty sum was collected for only one street!
+
+Column {.tabset}
+------------------------------------
+
+### 1. Estimated Durations of Overstayed Vehicles {data-height=800}
+
+```{r parking-ests}
 parking2019_vio <- parking2019_vio %>%
   # Extract specfic signs, assign them according to minutes
   mutate(restrict_mins = case_when(
@@ -428,10 +487,8 @@ parking2019_vio <- parking2019_vio %>%
     overstay_mins = DurationMinutes - restrict_mins)
 ```
 
-```{r}
-require(ggridges)
-renderPlot({
-ggplot(parking2019_vio) +
+```{r parking-ests-plot}
+renderPlot({ggplot(parking2019_vio) +
   geom_density_ridges(
     aes(
       x = overstay_mins,
@@ -456,22 +513,23 @@ ggplot(parking2019_vio) +
 })
 ```
 
-### Trend of Overstayed Vehicles
-
-```{r}
+### 2. Arrival/Departure Times of Overstayed Vehicles {data-height=800}
+```{r day-wrangling, warning = FALSE}
 parking2019_vio <- parking2019_vio %>%
   # Retrieve day of the week 
   mutate(arr_day = wday(arr_date, label = TRUE, week_start = 1),
          dep_day = wday(dep_date, label = TRUE, week_start = 1))
 ```
 
-```{r}
+```{r wrangle-arr-dep}
 parking2019_plot2 <- parking2019_vio 
+
 # Format CHAR to TIME variable  
 parking2019_plot2$arr_time <- 
   as.POSIXct(parking2019_plot2$arr_time, format="%H:%M")
 parking2019_plot2$dep_time <-
   as.POSIXct(parking2019_plot2$dep_time, format="%H:%M")
+
 parking2019_plot2 <- parking2019_plot2 %>%
   # Group arrival and departure times as arr_dep variable
     pivot_longer(c(arr_time, dep_time), 
@@ -479,9 +537,9 @@ parking2019_plot2 <- parking2019_plot2 %>%
                values_to = "arr_dep_time")
 ```
 
-```{r analysis2}
-renderPlot({
-parking2019_plot2 %>% ggplot() +
+```{r arr-dep-plot}
+renderPlot({parking2019_plot2 %>% 
+  ggplot() +
   geom_violin(
     aes(x = arr_day, y = arr_dep_time, colour = arr_dep),
     scale = "count",
@@ -491,7 +549,7 @@ parking2019_plot2 %>% ggplot() +
   facet_wrap(~ BetweenStreet1, nrow = 3) +
   scale_colour_manual(values = c("#00468b", "#009700")) +
   labs(x = "Arrival/Departure Time", y = "") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") 
 })
 ```
 
@@ -502,15 +560,13 @@ Column {data-width=400}
 ------------------------------------
 
 ### Model building
-We _fit_ a _linear model_ on log-transformed duration for 2019, using a four-way interaction: arrival hour, work day or non-work day, signPlateID, and sign rule.
+We _fit_ a _linear model_ on log-transformed duration for 2019, using a four-way interaction: arrival hour, workday, signPlateID, and sign rule.
 
-$log(DurationMinutes + 1) =  arr hour_i \times weekday_i \ SignPlateID_i \times signrule_i$
+$log(DurationMinutes + 1) =  arrhour_i + workday_i + \ SignPlateID_i + signrule_i$
 
 where arr_hour is a continuous variable, and the other three are categorical variables. 
 
-This model explains 11.17% of the variation in the data.
-
-Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. 
+This model explains 12.9% of the variation in the data. Given a small $R^2$, it can be implied that the model is not a good fit. 
 
 ```{r process-walking-data}
 park19_lm <- park_2019_hols %>% 
@@ -555,31 +611,41 @@ ggplot(park_aug_lm,
 })
 ```
 
-Explain
-===========================
-Column {data-width=400}
------------------------------------------------------------------------
-### Data
-Our dataset shows the records of cars parking in the streets of Melbourne CBD in 2019. For each parking lots, there will be sensors in it to track when a vehicle arrives and departs.
+Conclusion
+===========================================
 
-Each record includes the restriction of the bay and whether the vehicle overstayed that restriction. An event will also state the time that the parking lot is empty or vacant. 
-
-```{r}
-parking2019_tidy <- read.csv("parking2019_tidy.csv")
-parking2019_tidy
-#should we put in the original dataset instead?
+Column
+----------
+### CAUGHT IN ACTION
+```{r, out.width = "50%"}
+knitr::include_graphics("https://i.dailymail.co.uk/i/newpix/2018/09/06/16/4FC5B32800000578-0-image-m-42_1536248161089.jpg")
 ```
 
-Column {data-width=400}
------------------------------------------------------------------------
-### Making a model and predictions
-We also fitted a linear model to the data.
+[Source](https://i.dailymail.co.uk/i/newpix/2018/09/06/16/4FC5B32800000578-0-image-m-42_1536248161089.jpg)
 
+Column
+----------
+### Conclusion
+> The busiest parking street in Melbourne is Londsdale Street.  
 
+> People tend to stick with the rules when the parking spot has meter system.  
+
+> William Street (BetweenStreet of Lonsdale) has the highest parking duration in 1P MTR.   
+
+> Similar patterns are observed in overstayed vehicles across the week.  
+
+> **Takeaway: Most of the time, parking inspectors issue tickets 0 - 20 mins right after the parking violation time frame; VIOLATING PARKING TIME RESTRICTIONS IS NOT WORTH THE RISK.**
+
+>
 
 References
 ===========================
   City of Melbourne Open Data Team. (n.d.). On-street Car Parking Sensor Data - 2019 | Open Data | Socrata. Retrieved June 4, 2020, from https://data.melbourne.vic.gov.au/widgets/7pgd-bdf2
+  
+  City of Melbourne. (2020). Parking locations and fees. Retrieved from https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx
+  
+  City of Melbourne. (2020). Parking fines. Retrieved from https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.
+  
   
   Claus O. Wilke (2020). ggridges: Ridgeline Plots in 'ggplot2'. R
   package version 0.5.2. https://CRAN.R-project.org/package=ggridges
@@ -601,7 +667,10 @@ References
   
   Hadley Wickham, Jim Hester and Romain Francois (2018). readr: Read Rectangular Text Data. R
   package version 1.3.1. https://CRAN.R-project.org/package=readrKirill 
-  
+
+Hadley Wickham, Romain François and Lucy D'Agostino McGowan (2020). emo: Easily Insert 'Emoji'. R package version
+  0.0.0.9000. https://github.com/hadley/emo  
+
   Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2020). dplyr: A Grammar of
   Data Manipulation. R package version 0.8.5. https://CRAN.R-project.org/package=dplyr
   
@@ -619,6 +688,9 @@ References
   Müller (2017). here: A Simpler Way to Find Your Files. R package version 0.1.
   https://CRAN.R-project.org/package=here
  
+  Richard Iannone, JJ Allaire and Barbara Borges (2018). flexdashboard: R Markdown Format for Flexible Dashboards. R
+  package version 0.5.1.1. https://CRAN.R-project.org/package=flexdashboard
+ 
   Wang, E, D Cook, and RJ Hyndman (2020). A new tidy data structure to support exploration and
   modeling of temporal data. Journal of Computational and Graphical Statistics.
   doi:10.1080/10618600.2019.1695624.
@@ -626,14 +698,6 @@ References
   Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686,
   https://doi.org/10.21105/joss.01686
   
-  William Street, Melbourne. (2020). Retrieved 5 June 2020, from
-  https://en.wikipedia.org/wiki/William_Street,_Melbourne
- 
-  
- 
- 
-
-  
-  
-
+  Winston Chang, Joe Cheng, JJ Allaire, Yihui Xie and Jonathan McPherson (2020). shiny: Web Application Framework for R.
+  R package version 1.4.0.2. https://CRAN.R-project.org/package=shiny
   
