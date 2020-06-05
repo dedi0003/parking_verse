@@ -42,22 +42,19 @@ park_2019_hols <- parking2019_tidy %>%
 
 Overview
 ===========================
-Column {data-width=400}
+Column {data-width=150}
 -----------------------------------------------------------------------
-### Top 10 Busiest Parking Street in Melbourne
-```{r top-10}
-top10_table <- read_csv("Top10_Melb_Count.csv")
-knitr::kable(top10_table, caption = "Top 10 busiest parking street in Melbourne") %>%
-kableExtra::kable_styling(bootstrap_options = "basic")
+### Summary
+> Of the 10 busiest parking lots in Melbourne, two of them are located in Londsdale.  
 
-```
+> Lonsdale Street is one of the main streets in Melbourne's CBD. It offers high rise apartment style living, in between the businesses, shopping centers and hotels.
 
+>
 
-Column {data-width=400}
+Row {.tabset data-height=800}
 -----------------------------------------------------------------------
 
 ### Map of 10 Busiest Parking Street in Melbourne
-
 ```{r bincol-cor-info}
 coord <- data_frame("lat" = c(-37.8147255,
                               -37.8192437,
@@ -123,12 +120,61 @@ addTiles() %>%
 addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~as.character(info), label=~as.character(StreetName))
 ```
 
-Calendar plot
+### Top 10 Busiest Parking Street in Melbourne {data-height=800}
+```{r top-10}
+top10_table <- read_csv("Top10_Melb_Count.csv")
+knitr::kable(top10_table) %>%
+kableExtra::kable_styling(bootstrap_options = "basic")
+```
+
+Data cleaning
 ===========================
-Column {data-width=200}
+Here are the code that we used for cleaning and wrangling the data. 
+
+     #Retrieve Lonsdale street and its between streets_
+      parking2019_tidy <- parking2019 %>%  
+      
+    #Retrieve Lonsdale Street data  
+    #Remove parking lots without parking signs  
+      filter(StreetName == "LONSDALE STREET",
+         !(is.na(Sign))) %>%   
+    
+    #Separate date and time variables  
+    separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ") %>%
+    separate(DepartureTime, into = c("dep_date", "dep_time"), sep = " ")  
+      
+    #Format date variables from CHAR to DATE  
+    parking2019_tidy$arr_date <- mdy(parking2019_tidy$arr_date)  
+    parking2019_tidy$dep_date <- mdy(parking2019_tidy$dep_date)  
+      
+    #Extract hour& minutes  
+    parking2019_tidy$arr_hour <-    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H")  
+    parking2019_tidy$arr_min <- 
+    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
+    parking2019_tidy$dep_hour <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H")  
+    parking2019_tidy$dep_min <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
+    parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H: %M")  
+    parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H: %M")  
+
+    #remove unrelated variables_  
+    parking2019_tidy <- parking2019_tidy %>%
+    select(-DeviceId,
+         -StreetMarker,
+         -StreetId,
+         -BetweenStreet2,
+         -BetweenStreet2ID,
+         -AreaName)
+         
+    #writing the file into csv file
+    parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
+
+
+Non-workdays
+===========================
+Column {data-width=250}
 -----------------------------------------------------------------------
 
-### User interactions
+### User interactions {data-height=100}
 
 ```{r calendar-controls, echo = FALSE}
 # date range inputs
@@ -154,9 +200,23 @@ violation_ui <- selectInput(inputId = "colour_lines",
 violation_ui
 ```
 
+### Summary {data-height=600}
+> Unusual pattern of parking duration occurs mostly on holidays, such as:   
+• 10 June 2019: Queen's birthday,  
+• 20-21 long easter holiday,  
+• 25 April: Anzac Day,  
+• 5 November: Melbourne Cup,  
+• 25-26 Desember: christmas holidays.  
+  
+> For working days, Jan and Feb has lower parking duration than other months. However, we don't have any information for the possible reasons.  
 
+> People tend to stick with the rule when the parking spot has meter system, the average parking duration in the meter spots is lower than the allowed time.  
 
-Column {data-width=600}
+> Average duration of parking in non-meter parking spot tend to over the allowed time especially in the holidays.
+
+>
+
+Column {data-width=550}
 -----------------------------------------------------------------------
 ### Calendar plot
 ```{r calendarise, echo=FALSE}
@@ -225,11 +285,11 @@ renderPlot({
 
 
 
-Trend in Lonsdale Street
+Lonsdale Street
 ===========================
-Column {data-width=200}
+Column {data-width=300}
 -----------------------------------------------------------------------
-### User interactions {data-height=300}
+### User interactions {data-height=250}
 
 ```{r user-controls, echo = FALSE}
 street_ui <- selectInput(inputId = "street_id",
@@ -240,7 +300,11 @@ street_ui <- selectInput(inputId = "street_id",
 street_ui
 ```
 
+
 ### Summary of parking duration {data-heigh=500}
+> Some dates have unusual high duration of parking. It can be related to some holidays when people tend to park longer than usual. 
+  
+> William street with sign rule 1P MTR has the highest average of parking duration among other "between streets".  
 
 ```{r avgduration_sign}
 parking2019_tidy %>% 
@@ -298,7 +362,7 @@ renderPlot({
 })
 ```
 
-Parking Signs Violations
+Parking Violations
 ===========================
 ### Proportion of vehicles in violation of parking restriction
 ```{r summary-violations}
@@ -337,8 +401,14 @@ parking2019_vio %>%
 ```
 
 
-Trends for Overstayed Vehicles
+Overstayed Vehicles
 ===========================
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+
+Column {.tabset data-width=600}
+-----------------------------------------------------------------------
 ### Overstayed Vehicles
 
 ```{r}
@@ -440,25 +510,8 @@ where arr_hour is a continuous variable, and the other three are categorical var
 
 This model explains 11.17% of the variation in the data.
 
-### Residual
-```{r res-fitted}
-# Residual vs plot
+Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. 
 
-renderPlot({
-park_aug_lm %>% 
-  ggplot(aes(x = .fitted,
-             y = .resid)) +
-  geom_point() +
-  facet_wrap(~StreetName)+
-  geom_abline(size = 2, color = "darkred")
-})
-```
-
-
-Column {data-width=400}
-------------------------------------
-
-### Predicted versus observed usage {data-height=400}
 ```{r process-walking-data}
 park19_lm <- park_2019_hols %>% 
   mutate_at(.vars = vars(StreetName,
@@ -481,8 +534,14 @@ park19_lm <- park_2019_hols %>%
 ```{r glance-fit-lm}
 # Extract model fit summary
 glance(park_fit_lm)
+```
 
-#model-augment
+
+Column {data-width=400}
+------------------------------------
+
+### Predicted versus observed usage {data-height=600}
+```{r}
 park_aug_lm <- augment(park_fit_lm, data = park19_lm)
 
 renderPlot({
@@ -517,84 +576,64 @@ Column {data-width=400}
 We also fitted a linear model to the data.
 
 
-Data cleaning
-===========================
-Here are the code that we used for cleaning and wrangling the data. 
-
-     #Retrieve Lonsdale street and its between streets_
-      parking2019_tidy <- parking2019 %>%  
-      
-    #Retrieve Lonsdale Street data  
-    #Remove parking lots without parking signs  
-      filter(StreetName == "LONSDALE STREET",
-         !(is.na(Sign))) %>%   
-    
-    #Separate date and time variables  
-    separate(ArrivalTime, into = c("arr_date", "arr_time"), sep =" ") %>%
-    separate(DepartureTime, into = c("dep_date", "dep_time"), sep = " ")  
-      
-    #Format date variables from CHAR to DATE  
-    parking2019_tidy$arr_date <- mdy(parking2019_tidy$arr_date)  
-    parking2019_tidy$dep_date <- mdy(parking2019_tidy$dep_date)  
-      
-    #Extract hour& minutes  
-    parking2019_tidy$arr_hour <-    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H")  
-    parking2019_tidy$arr_min <- 
-    format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
-    parking2019_tidy$dep_hour <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H")  
-    parking2019_tidy$dep_min <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%M")  
-    parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format="%H:%M:%S"),"%H: %M")  
-    parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M:%S"),"%H: %M")  
-
-    #remove unrelated variables_  
-    parking2019_tidy <- parking2019_tidy %>%
-    select(-DeviceId,
-         -StreetMarker,
-         -StreetId,
-         -BetweenStreet2,
-         -BetweenStreet2ID,
-         -AreaName)
-
 
 References
 ===========================
-Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2020). dplyr: A Grammar of
-  Data Manipulation. R package version 0.8.5. https://CRAN.R-project.org/package=dplyr
-
-  Hadley Wickham, Jim Hester and Romain Francois (2018). readr: Read Rectangular Text Data. R
-  package version 1.3.1. https://CRAN.R-project.org/package=readr
+  City of Melbourne Open Data Team. (n.d.). On-street Car Parking Sensor Data - 2019 | Open Data | Socrata. Retrieved June 4, 2020, from https://data.melbourne.vic.gov.au/widgets/7pgd-bdf2
   
-  Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686,
-  https://doi.org/10.21105/joss.01686
+  Claus O. Wilke (2020). ggridges: Ridgeline Plots in 'ggplot2'. R
+  package version 0.5.2. https://CRAN.R-project.org/package=ggridges
   
-   Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy with lubridate. Journal of
-  Statistical Software, 40(3), 1-25. URL http://www.jstatsoft.org/v40/i03/.
-  
-   Wang, E, D Cook, and RJ Hyndman (2020). A new tidy data structure to support exploration and
-  modeling of temporal data. Journal of Computational and Graphical Statistics.
-  doi:10.1080/10618600.2019.1695624.
-  
-    Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2019). leaflet: Create Interactive Web Maps with
-  the JavaScript 'Leaflet' Library. R package version 2.0.3.
-  https://CRAN.R-project.org/package=leaflet
-  
-   D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1),
+  D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1),
   144-161. URL http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
-  
-   Kirill Müller (2017). here: A Simpler Way to Find Your Files. R package version 0.1.
-  https://CRAN.R-project.org/package=here
   
   David Robinson and Alex Hayes (2020). broom: Convert Statistical Analysis Objects into Tidy
   Tibbles. R package version 0.5.6. https://CRAN.R-project.org/package=broom
   
+  Exhibition Street, Melbourne. (2020). Retrieved 5 June 2020, from   
+  https://en.wikipedia.org/wiki/Exhibition_Street,_Melbourne
+    
+  Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy with lubridate. Journal of
+  Statistical Software, 40(3), 1-25. URL http://www.jstatsoft.org/v40/i03/
+    
   Hadley Wickham (2019). stringr: Simple, Consistent Wrappers for Common String Operations. R
   package version 1.4.0. https://CRAN.R-project.org/package=stringr
+  
+  Hadley Wickham, Jim Hester and Romain Francois (2018). readr: Read Rectangular Text Data. R
+  package version 1.3.1. https://CRAN.R-project.org/package=readrKirill 
+  
+  Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2020). dplyr: A Grammar of
+  Data Manipulation. R package version 0.8.5. https://CRAN.R-project.org/package=dplyr
   
   Hao Zhu (2019). kableExtra: Construct Complex Table with 'kable' and
   Pipe Syntax. R package version 1.1.0.
   https://CRAN.R-project.org/package=kableExtra
   
-  Claus O. Wilke (2020). ggridges: Ridgeline Plots in 'ggplot2'. R
-  package version 0.5.2. https://CRAN.R-project.org/package=ggridges
+  Joe Cheng, Bhaskar Karambelkar and Yihui Xie (2019). leaflet: Create Interactive Web Maps with
+  the JavaScript 'Leaflet' Library. R package version 2.0.3.
+  https://CRAN.R-project.org/package=leaflet
   
-  City of Melbourne Open Data Team. (n.d.). On-street Car Parking Sensor Data - 2019 | Open Data | Socrata. Retrieved June 4, 2020, from https://data.melbourne.vic.gov.au/widgets/7pgd-bdf2
+  Lonsdale Street, Melbourne. (2020). Retrieved 5 June 2020, from
+  https://en.wikipedia.org/wiki/Lonsdale_Street,_Melbourne
+
+  Müller (2017). here: A Simpler Way to Find Your Files. R package version 0.1.
+  https://CRAN.R-project.org/package=here
+ 
+  Wang, E, D Cook, and RJ Hyndman (2020). A new tidy data structure to support exploration and
+  modeling of temporal data. Journal of Computational and Graphical Statistics.
+  doi:10.1080/10618600.2019.1695624.
+  
+  Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686,
+  https://doi.org/10.21105/joss.01686
+  
+  William Street, Melbourne. (2020). Retrieved 5 June 2020, from
+  https://en.wikipedia.org/wiki/William_Street,_Melbourne
+ 
+  
+ 
+ 
+
+  
+  
+
+  
