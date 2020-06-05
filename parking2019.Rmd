@@ -30,11 +30,11 @@ library(ggpubr)
 
 # Data wrangling
 
-```{r read-in, cache = TRUE}
+```{r read-in, cache = TRUE, eval=FALSE}
 parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
 
-```{r}
+```{r eval=FALSE}
 parking2019_tidy <- parking2019 %>%
   filter(StreetName == "LONSDALE STREET",
          !(is.na(SignPlateID))) %>%  
@@ -65,7 +65,7 @@ parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format=
 parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M"),"%H: %M")
 ```
 
-```{r read-in-tidy-data, cache = TRUE}
+```{r read-in-tidy-data, cache = TRUE, eval=FALSE}
 parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
 ```
 
@@ -342,19 +342,15 @@ parking2019_plot2 %>% ggplot() +
 
 ```{r read}
 parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
-<<<<<<< HEAD
   mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
-
 ```
 
 ```{r}
 # Just for information of parking Sign (no need to include in shiny)
 parking2019_tidy %>% 
   group_by(Sign) %>% 
-  summarise(sign = n())
-=======
+  summarise(sign = n()) %>%
   mutate(sign_rule = strtrim(Sign, 6))
->>>>>>> 7d115220b6cd59b2eeeeef608b7bd279fba2178f
 ```
 
 
@@ -496,19 +492,22 @@ glance(park_fit_lm)
 > Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. However, the relationship is still not significant with r.squared only has 0.13. The reason of this is many variables that can explain the duration are not covered in the dataset, for example facilities near the parking spots (school, office, church, restaurant, mall/grocery shop) and people's motives (i.e. picking up passengers, waiting a friend).   
 
 
-# Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?  **we need a new dataset here**
+# Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?
 
-```{r top-10}
-print_table <- function(table, head){
-  table %>%
-  group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
-  summarise(CountperDay= n()/365) %>%
-   arrange(desc(CountperDay)) %>%
-  head(head)
-}
-save_table <- print_table(parking2019, 10)
-write_csv(save_table, "Top10_Melb_Count.csv")
+```{r top-10, eval = FALSE}
+# this is teh code to take 10 busiest parking spot from the main data
+#print_table <- function(table, head){
+#  table %>%
+#  group_by(StreetName, BetweenStreet1, BetweenStreet2) %>%
+#  summarise(CountperDay= n()/365) %>%
+#   arrange(desc(CountperDay)) %>%
+#  head(head)
+#}
+#save_table <- print_table(parking2019, 10)
+#write_csv(save_table, "Top10_Melb_Count.csv")
+```
 
+```{r}
 top10_table <- read_csv("Top10_Melb_Count.csv")
 knitr::kable(top10_table, caption = "Top 10 busiest parking street in Melbourne") %>%
 kableExtra::kable_styling(bootstrap_options = "basic")
