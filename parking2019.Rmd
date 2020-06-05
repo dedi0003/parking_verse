@@ -72,7 +72,7 @@ summ_parking2019_vio <- parking2019_tidy %>%
   
 kable(summ_parking2019_vio,
       caption = "Proportion of vehicles in violation of parking restriction") %>%
-  kable_styling(bootstrap_options = "bordered")
+  kable_styling(bootstrap_options = c("bordered", "striped"))
 ```
 
 > Parking Services Officers may mark the tire of a vehicle parked in a time-restricted area& come back as soon as you overstay the time restriction.
@@ -82,7 +82,6 @@ Data:
 > In 2019, a total of 249,216 instances where a car parked& departed.
 > Of this, 10,191 (2.918%) violated the restriction.
 > This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
-
 
 # Along Lonsdale Street, which locations do most vehicles overstay in?
 
@@ -109,7 +108,7 @@ parking2019_vio %>%
   summarise(n = n()) %>%
   arrange(desc(n)) %>%
   head(10) %>%
-  kable(caption = "Top 10 most common parking signs which are violated") %>%
+  kable(caption = "Top 10 most common parking signs violated") %>%
   kable_styling(bootstrap_options = c("bordered", "striped"))
 ```
 
@@ -138,17 +137,14 @@ parking2019_vio <- parking2019_vio %>%
 
 ```{r}
 require(ggridges)
-ggplot(parking2019_vio) +
-  geom_density_ridges(
-    aes(
-      x = overstay_mins,
-      y = factor(restriction),
-      fill = factor(restriction)
-    ),
-    alpha = 0.6,
-    stat = "binline",
-    bins = 45
-  ) +
+
+ggplot(parking2019_vio, 
+       aes(x = overstay_mins, 
+           y = factor(restriction), 
+           fill = factor(restriction))) +
+  geom_density_ridges(alpha = 0.6,
+                      stat = "binline",
+                      bins = 45) +
   scale_x_continuous(breaks = c(seq(from = 0, to = 300, by = 10)),
                      limits = c(0, 300)) +
   facet_wrap( ~ BetweenStreet1, nrow = 3) +
@@ -202,3 +198,5 @@ parking2019_plot2 %>% ggplot() +
   labs(x = "Arrival/Departure Time", y = "") +
   theme(legend.position = "bottom") 
 ```
+
+
