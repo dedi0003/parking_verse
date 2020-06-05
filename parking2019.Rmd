@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, cache=TRUE)
 ```
 
-```{r libraries}
+```{r libraries, include = FALSE}
 library(dplyr)
 library(kableExtra)
 library(readr)
@@ -30,11 +30,11 @@ library(ggpubr)
 
 # Data wrangling
 
-```{r read-in, cache = TRUE}
+```{r read-in, cache = TRUE, eval = FALSE}
 parking2019 <- read.csv(here::here("On-street_Car_Parking_Sensor_Data_-_2019.csv"))
 ```
 
-```{r}
+```{r data-wrangle, eval = FALSE}
 parking2019_tidy <- parking2019 %>%
   filter(StreetName == "LONSDALE STREET",
          !(is.na(SignPlateID))) %>%  
@@ -65,12 +65,15 @@ parking2019_tidy$arr_time <- format(as.POSIXct(parking2019_tidy$arr_time,format=
 parking2019_tidy$dep_time <- format(as.POSIXct(parking2019_tidy$dep_time,format="%H:%M"),"%H: %M")
 ```
 
-```{r read-in-tidy-data, cache = TRUE}
+```{r write-in-tidy-data, eval = FALSE}
 parking2019_tidy <- write_csv(parking2019_tidy, "parking2019_tidy.csv")
 ```
 
+```{r read-in-data, cache = TRUE}
+parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv"))
+```
 
-# Section 1 : What is the proportion of vehicles that overstayed for a given restriction? 1/2p,1p,2p,3p,4p
+# Brendi: Vehicles which overstayed restrictions
 ```{r summary-violations}
 summ_parking2019_vio <- parking2019_tidy %>%
   group_by(InViolation) %>%
@@ -88,14 +91,14 @@ Data:
 > Of this, 10,191 (2.918%) violated the restriction.
 > This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
 
-# Along Lonsdale Street, which locations do most vehicles overstay in?
+# Brendi's Analysis: Locations of overstayed vehicles
 
 ```{r parking-violation}
 parking2019_vio <- parking2019_tidy %>%
   filter(InViolation == "true")
 ```
 
-```{r}
+```{r adj-street}
 parking2019_vio %>%
   group_by(BetweenStreet1) %>%
   summarise(n = n()) %>%
@@ -105,9 +108,9 @@ parking2019_vio %>%
 ```
 
 > Out of the all five streets, Exhibition Street had the most number of vehicles which violated the time restriction.
-> Exhibition St and Russel St are actually right next to one another! What do they have in common? (*elaborate*) - many rooftop bars etc.
+> Exhibition St and Russel St are actually right next to one another! What do they have in common? - many rooftop bars etc.
 
-```{r}
+```{r top-10-violate}
 parking2019_vio %>%
   group_by(BetweenStreet1, Sign) %>%
   summarise(n = n()) %>%
@@ -120,7 +123,7 @@ parking2019_vio %>%
 > We'd expect more vehicles to overstay in parking lots with a shorter time frame
 > BUT, most vehicles overstayed in where the time restrictions were 2 hours
 
-```{r}
+```{r violate-signs}
 parking2019_vio <- parking2019_vio %>%
   # Extract specfic signs, assign them according to minutes
   mutate(restrict_mins = case_when(
@@ -137,8 +140,7 @@ parking2019_vio <- parking2019_vio %>%
     overstay_mins = DurationMinutes - restrict_mins)
 ```
 
-```{r}
-
+```{r ridges-plot}
 require(ggridges)
 ggplot(parking2019_vio) +
   geom_density_ridges(
@@ -166,15 +168,15 @@ ggplot(parking2019_vio) +
 
 > No vehicles overstayed in the 1/2P signs in Queen St, Exhibition St& William St.
 
-# Analysis 2: Arrival& Departure times of cars that overstayed
-```{r}
+# Brendi's Analysis: Arrival& Departure times of cars that overstayed
+```{r add-week-of-the-day}
 parking2019_vio <- parking2019_vio %>%
   # Retrieve day of the week 
   mutate(arr_day = wday(arr_date, label = TRUE, week_start = 1),
          dep_day = wday(dep_date, label = TRUE, week_start = 1))
 ```
 
-```{r}
+```{r parking-longer}
 parking2019_plot2 <- parking2019_vio 
 # Format CHAR to TIME variable  
 parking2019_plot2$arr_time <- 
@@ -188,7 +190,7 @@ parking2019_plot2 <- parking2019_plot2 %>%
                values_to = "arr_dep_time")
 ```
 
-```{r analysis2}
+```{r violin-plot}
 parking2019_plot2 %>% ggplot() +
   geom_violin(
     aes(x = arr_day, y = arr_dep_time, colour = arr_dep),
@@ -222,139 +224,11 @@ Data:
 > This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
 
 
-# Along Lonsdale Street, which locations do most vehicles overstay in?
+# Helen's Analysis: Time frames where parking lots are the most vacant/occupied.
 
-```{r parking-violation}
-parking2019_vio <- parking2019_tidy %>%
-  filter(InViolation == "true")
-```
-
-```{r}
-parking2019_vio %>%
-  group_by(BetweenStreet1) %>%
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>%
-  kable(caption = "Adjacent streets with the most restriction violations") %>%
-  kable_styling(bootstrap_options = c("bordered", "striped"))
-```
-
-> Out of the all five streets, Exhibition Street had the most number of vehicles which violated the time restriction.
-> Exhibition St and Russel St are actually right next to one another! What do they have in common? (*elaborate*) - many rooftop bars etc.
-
-```{r}
-parking2019_vio %>%
-  group_by(BetweenStreet1, Sign) %>%
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>%
-  head(10) %>%
-  kable(caption = "Top 10 most common parking signs which are violated") %>%
-  kable_styling(bootstrap_options = c("bordered", "striped"))
-```
-
-> We'd expect more vehicles to overstay in parking lots with a shorter time frame
-> BUT, most vehicles overstayed in where the time restrictions were 2 hours
-
-```{r}
-parking2019_vio <- parking2019_vio %>%
-  # Extract specfic signs, assign them according to minutes
-  mutate(restrict_mins = case_when(
-    str_starts(Sign, "1/2 P") ~ 30, 
-    str_starts(Sign, "1P") ~ 60,
-    str_starts(Sign, "2P") ~ 120),
-  # Extract parking signs, assign them into respective factors 
-    restriction = case_when(
-    str_starts(Sign, "1/2 P") ~ "1/2P", 
-    str_starts(Sign, "1P") ~ "1P",
-    str_starts(Sign, "2P") ~ "2P"
-    ),
-    # Compute amount of mins overstayed
-    overstay_mins = DurationMinutes - restrict_mins)
-```
-
-```{r}
-require(ggridges)
-ggplot(parking2019_vio) +
-  geom_density_ridges(
-    aes(
-      x = overstay_mins,
-      y = factor(restriction),
-      fill = factor(restriction)
-    ),
-    alpha = 0.6,
-    stat = "binline",
-    bins = 45
-  ) +
-  scale_x_continuous(breaks = c(seq(from = 0, to = 300, by = 10)),
-                     limits = c(0, 300)) +
-  facet_wrap( ~ BetweenStreet1, nrow = 3) +
-  scale_fill_manual(values = c("#663300", "#006633", "#330066")) +
-  labs(x = "Minutes overstayed", y = "") +
-  theme(axis.text.x = element_text(angle = 90)) +
-  theme(legend.position = "none") +
-  theme(axis.title.x = element_text(size = 12, 
-                                    face = "bold", 
-                                    margin = unit(c(1.5, 0, 0, 0), "lines"))) +
-  ggtitle("Density estimate of vehicles who overstayed restrictions")
-```
-
-> No vehicles overstayed in the 1/2P signs in Queen St, Exhibition St& William St.
-
-
-# Analysis 2: Arrival& Departure times of cars that overstayed
-```{r}
-parking2019_vio <- parking2019_vio %>%
-  # Retrieve day of the week 
-  mutate(arr_day = wday(arr_date, label = TRUE, week_start = 1),
-         dep_day = wday(dep_date, label = TRUE, week_start = 1))
-```
-
-```{r}
-parking2019_plot2 <- parking2019_vio 
-
-# Format CHAR to TIME variable  
-parking2019_plot2$arr_time <- 
-  as.POSIXct(parking2019_plot2$arr_time, format="%H:%M")
-parking2019_plot2$dep_time <-
-  as.POSIXct(parking2019_plot2$dep_time, format="%H:%M")
-
-parking2019_plot2 <- parking2019_plot2 %>%
-  # Group arrival and departure times as arr_dep variable
-    pivot_longer(c(arr_time, dep_time), 
-               names_to = "arr_dep",
-               values_to = "arr_dep_time")
-```
-
-```{r analysis2}
-parking2019_plot2 %>% ggplot() +
-  geom_violin(
-    aes(x = arr_day, y = arr_dep_time, colour = arr_dep),
-    scale = "count",
-    alpha = 0.6,
-    draw_quantiles = 0.5
-  ) +
-  facet_wrap(~ BetweenStreet1, nrow = 3) +
-  scale_colour_manual(values = c("#00468b", "#009700")) +
-  labs(x = "Arrival/Departure Time", y = "") +
-  theme(legend.position = "bottom") 
-```
-
-# Section 2 : What are the time frames where parking lots are the most vacant/occupied?
-
-```{r read}
-parking2019_tidy <- read.csv(here::here("parking2019_tidy.csv")) %>% 
-<<<<<<< HEAD
+```{r create-sign-rule}
+parking2019_tidy <- parking2019_tidy %>% 
   mutate(sign_rule = strtrim(Sign, 6), arr_date = date(arr_date))
-
-```
-
-```{r}
-# Just for information of parking Sign (no need to include in shiny)
-parking2019_tidy %>% 
-  group_by(Sign) %>% 
-  summarise(sign = n())
-=======
-  mutate(sign_rule = strtrim(Sign, 6))
->>>>>>> 7d115220b6cd59b2eeeeef608b7bd279fba2178f
 ```
 
 
@@ -364,7 +238,7 @@ parking2019_tidy %>%
   summarise(mean_duration = mean(DurationMinutes)) %>%
   ggplot(aes(x = as.Date(arr_date),
              y = mean_duration,
-             group = sign_rule)) +
+             colour = sign_rule)) +
   geom_line(size = 0.3) +
   facet_grid(sign_rule ~ BetweenStreet1,
              # this code presents the facets in a nice way
@@ -388,7 +262,6 @@ parking2019_tidy %>%
   summarise(avg_duration = mean(DurationMinutes)) %>%
   kable() %>%
 kableExtra::kable_styling(bootstrap_options = "basic")
-
 ```
 
 ```{r avgduration_betweenstreet}
@@ -400,8 +273,7 @@ kableExtra::kable_styling(bootstrap_options = "basic")
 
 ```
 
-# Section 3 : Parking availability: On a workday/non-workday, what are the time frames where parking lots are the most vacant/occupied? 
-
+# Vega's Analysis: Parking availability on workday vs non-workdays
 
 ```{r holiday2019} 
 hols_2019 <- tsibble::holiday_aus(year = 2019, state = "VIC")
@@ -496,7 +368,7 @@ glance(park_fit_lm)
 > Our model shows correlation between arrival time (hour) with duration of parking. To enhance the model we also include weekday/holidays, betweenStreet, parking rules as explanatory variables of the parking duration. However, the relationship is still not significant with r.squared only has 0.13. The reason of this is many variables that can explain the duration are not covered in the dataset, for example facilities near the parking spots (school, office, church, restaurant, mall/grocery shop) and people's motives (i.e. picking up passengers, waiting a friend).   
 
 
-# Section 4 : There any prominent characteristics for the top 10 hardest parking street to get in Melbourne CBD?  **we need a new dataset here**
+# Putu's Analysis: Prominent characteristics of the top 10 busiest parking streets in Melbourne CBD?
 
 ```{r top-10}
 print_table <- function(table, head){
