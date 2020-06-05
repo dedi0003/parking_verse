@@ -703,3 +703,4 @@ Hadley Wickham, Romain François and Lucy D'Agostino McGowan (2020). emo: Easily
   Winston Chang, Joe Cheng, JJ Allaire, Yihui Xie and Jonathan McPherson (2020). shiny: Web Application Framework for R.
   R package version 1.4.0.2. https://CRAN.R-project.org/package=shiny
   
+  Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.28.
