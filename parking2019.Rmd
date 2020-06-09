@@ -84,14 +84,9 @@ kable(summ_parking2019_vio,
   kable_styling(bootstrap_options = "bordered")
 ```
 
-> Parking Services Officers may mark the tire of a vehicle parked in a time-restricted area& come back as soon as you overstay the time restriction.
-> Inside Melbourne CBD, the parking fees for on street-parking is [$7/hr](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx).
-Data:
-> In 2019, a total of 249,216 instances where a car parked& departed.
-> Of this, 10,191 (2.918%) violated the restriction.
-> This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
 
 # Brendi's Analysis: Locations of overstayed vehicles
+
 
 ```{r parking-violation}
 parking2019_vio <- parking2019_tidy %>%
@@ -149,7 +144,6 @@ ggplot(parking2019_vio) +
       y = factor(restriction),
       fill = factor(restriction)
     ),
-    alpha = 0.6,
     stat = "binline",
     bins = 45
   ) +
@@ -223,6 +217,12 @@ Data:
 > Of this, 10,191 (2.918%) violated the restriction.
 > This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
 
+> Parking Services Officers may mark the tire of a vehicle parked in a time-restricted area& come back as soon as you overstay the time restriction.
+> Inside Melbourne CBD, the parking fees for on street-parking is [$7/hr](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx).
+Data:
+> In 2019, a total of 249,216 instances where a car parked& departed.
+> Of this, 10,191 (2.918%) violated the restriction.
+> This proportion may seem little, but parking fines are on average, [$124](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.) when you overstay! On average, `$1,263,684` were paid just for the fines in Lonsdale Street!
 
 # Helen's Analysis: Time frames where parking lots are the most vacant/occupied.
 
@@ -350,7 +350,7 @@ park19_lm <- park_2019_hols %>%
 ```
 
 
-```{r fit-lm}
+```{r fit-lm, include = FALSE}
 park_fit_lm <- lm (
   formula = log_duration ~ arr_hour + weekday + SignPlateID + sign_rule + BetweenStreet1,
   data = park19_lm

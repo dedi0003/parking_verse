@@ -21,6 +21,7 @@ library(ggmap)
 library(here)
 library(mapview)
 library(broom)
+library(scales)
 library(stringr)
 library(kableExtra)
 ```
@@ -304,7 +305,7 @@ street_ui
 ```
 
 
-### Summary of parking duration {data-heigh=500}
+### Summary of parking duration {data-height=500}
 > Some dates have unusual high duration of parking. It can be related to some holidays when people tend to park longer than usual. 
   
 > William street with sign rule 1P MTR has the highest average of parking duration among other "between streets".  
@@ -441,7 +442,7 @@ Row {data-height=300}
 
 ### Durations of overstay
 ```{r value-box3}
-valueBox("0-20 mins", 
+valueBox("5-20 mins", 
          caption = "Most overstayed durations", 
          icon = "far fa-clock", 
          color = "#808080")
@@ -457,20 +458,26 @@ valueBox("10,191 (2.9%)",
 
 ### Fines paid
 ```{r value-box5}
-valueBox("$1,263,684", 
-         caption = "Fines paid in Lonsdale Street", 
+valueBox("$93 Million", 
+         caption = "Fines paid in Melbourne CBD in 2019", 
          icon= "fas fa-receipt", 
          color = "#008000")
 ```
 
 ### Summary `r emo::ji("police")`
-- These officers are quick and sneaky, even chalk tools and advances photography are used 
-- Although, proportion of vehicles that violated are relatively small, a hefty sum was collected for only one street!
+
+> Although, proportion of vehicles that violated are relatively small, a hefty sum was collected for parking fines!
+
+> On average, `r scales::comma(93000000/124)` parking fines were issued in Melbourne CBD even though most vehicles overstayed for only 5-20minutes
+
+> These officers are on the ball, even chalk tools and advanced photography are used! [(Source: City of Melbourne)](https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx)
+
+>
 
 Column {.tabset}
 ------------------------------------
 
-### 1. Estimated Durations of Overstayed Vehicles {data-height=800}
+### Estimated Durations of Overstayed Vehicles {data-height=600}
 
 ```{r parking-ests}
 parking2019_vio <- parking2019_vio %>%
@@ -488,6 +495,7 @@ parking2019_vio <- parking2019_vio %>%
     # Compute amount of mins overstayed
     overstay_mins = DurationMinutes - restrict_mins)
 ```
+
 
 ```{r parking-ests-plot}
 renderPlot({ggplot(parking2019_vio) +
@@ -628,15 +636,17 @@ knitr::include_graphics("https://i.dailymail.co.uk/i/newpix/2018/09/06/16/4FC5B3
 Column
 ----------
 ### Conclusion
-> The busiest parking street in Melbourne is Londsdale Street.  
+> Londsdale Street is the busiest on-street parking spot in Melbourne CBD.
 
-> People tend to stick with the rules when the parking spot has meter system.  
+> Most vehicls tend to stick with parking rules when the parking spot has a meter system.  
 
-> William Street (BetweenStreet of Lonsdale) has the highest parking duration in 1P MTR.   
+> Typically vehicles usually park for less than an hour in on-street car parks
 
-> Similar patterns are observed in overstayed vehicles across the week.  
+> Similar patterns are observed in overstayed vehicles across each location and weeks.
 
-> **Takeaway: Most of the time, parking inspectors issue tickets 0 - 20 mins right after the parking violation time frame; VIOLATING PARKING TIME RESTRICTIONS IS NOT WORTH THE RISK.**
+> Most parking violations exceeds only 5 - 20 minutes, but a large sum was paid for parking violations
+
+> **Takeaway: ALWAYS PAY YOUR FOR YOUR PARKING TICKETS**
 
 >
 
@@ -647,7 +657,6 @@ References
   City of Melbourne. (2020). Parking locations and fees. Retrieved from https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-locations-fees/Pages/parking-locations-and-fees.aspx
   
   City of Melbourne. (2020). Parking fines. Retrieved from https://www.melbourne.vic.gov.au/parking-and-transport/parking/parking-fines/Pages/default.aspx#:~:text=Penalty%20amounts%E2%80%8B,State%20Government%20and%20increase%20annually.
-  
   
   Claus O. Wilke (2020). ggridges: Ridgeline Plots in 'ggplot2'. R
   package version 0.5.2. https://CRAN.R-project.org/package=ggridges
@@ -663,6 +672,8 @@ References
     
   Garrett Grolemund, Hadley Wickham (2011). Dates and Times Made Easy with lubridate. Journal of
   Statistical Software, 40(3), 1-25. URL http://www.jstatsoft.org/v40/i03/
+
+  Hadley Wickham and Dana Seidel (2020). scales: Scale Functions for Visualization. R package version 1.1.1. https://CRAN.R-project.org/package=scales
     
   Hadley Wickham (2019). stringr: Simple, Consistent Wrappers for Common String Operations. R
   package version 1.4.0. https://CRAN.R-project.org/package=stringr
