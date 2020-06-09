@@ -559,7 +559,7 @@ renderPlot({parking2019_plot2 %>%
   facet_wrap(~ BetweenStreet1, nrow = 3) +
   scale_colour_manual(values = c("#00468b", "#009700")) +
   labs(x = "Arrival/Departure Time", y = "") +
-  theme(legend.position = "bottom") 
+  theme(legend.position = "top") 
 })
 ```
 
@@ -638,7 +638,7 @@ Column
 ### Conclusion
 > Londsdale Street is the busiest on-street parking spot in Melbourne CBD.
 
-> Most vehicls tend to stick with parking rules when the parking spot has a meter system.  
+> Most vehicles tend to stick with parking rules when the parking spot has a meter system.  
 
 > Typically vehicles usually park for less than an hour in on-street car parks
 
@@ -646,7 +646,7 @@ Column
 
 > Most parking violations exceeds only 5 - 20 minutes, but a large sum was paid for parking violations
 
-> **Takeaway: ALWAYS PAY YOUR FOR YOUR PARKING TICKETS**
+> **Takeaway: ALWAYS PAY YOUR FOR YOUR PARKING TICKETS!**
 
 >
 
